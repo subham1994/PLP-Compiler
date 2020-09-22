@@ -15,6 +15,7 @@
 package cop5556fa20;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class Scanner {
@@ -39,6 +40,9 @@ public class Scanner {
 		public int pos() { return pos; }
 	}
 	
+	private static enum states {
+		START, EQUALS, IDENT_START, IDENT_PART, DIGITS
+	}
 	
 	public static enum Kind {
 		IDENT, INTLIT, STRINGLIT, CONST,
@@ -99,19 +103,44 @@ public class Scanner {
 	 * position of the next token to be returned by a call to nextToken
 	 */
 	private int nextTokenPos = 0;
+	static final char EOFChar = 0;
+	private final char chars[];
 
 	Scanner(String inputString) {
-		/* IMPLEMENT THIS */
+		int len = inputString.length();
+		chars = Arrays.copyOf(inputString.toCharArray(), len + 1);
+		chars[len] = EOFChar;
 	}
 	
 
 	
 	public Scanner scan() throws LexicalException {
-		/* IMPLEMENT THIS */
 		int pos = 0;
 		int line = 1;
 		int posInLine = 1;
-		tokens.add(new Token(Kind.EOF, pos, 0, line, posInLine));
+		states state = states.START;
+		
+		while (pos < chars.length) {
+			switch (state) {
+				case START -> {
+					
+				}
+				case EQUALS -> {
+			
+				}
+				case IDENT_START -> {
+					
+				}
+				case IDENT_PART -> {
+					
+				}
+				case DIGITS -> {
+					
+				}
+			}
+		}
+		
+//		tokens.add(new Token(Kind.EOF, pos, 0, line, posInLine));
 		return this;
 	}
 	
