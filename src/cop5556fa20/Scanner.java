@@ -41,7 +41,7 @@ public class Scanner {
 	}
 	
 	private static enum states {
-		START, EQUALS, IDENT_START, IDENT_PART, DIGITS, LINE_TERM
+		START, EQUALS, IDENT_START, IDENT_PART, DIGITS, LINE_TERM, GREATER, LESS, NOT, DASH
 	}
 	
 	public static enum Kind {
@@ -161,6 +161,12 @@ public class Scanner {
 							posInLine++;
 							break;
 						}
+						case ':' -> {
+							tokens.add(new Token(Kind.COLON, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
 						case ',' -> {
 							tokens.add(new Token(Kind.COMMA, pos, 1, line, posInLine));
 							pos++;
@@ -215,6 +221,30 @@ public class Scanner {
 							posInLine++;
 							break;
 						}
+						case '-' -> {
+							pos++;
+							posInLine++;
+							state = states.DASH;
+							break;
+						}
+						case '>' -> {
+							pos++;
+							posInLine++;
+							state = states.GREATER;
+							break;
+						}
+						case '<' -> {
+							pos++;
+							posInLine++;
+							state = states.LESS;
+							break;
+						}
+						case '!' -> {
+							pos++;
+							posInLine++;
+							state = states.NOT;
+							break;
+						}
 						case '=' -> {
 							pos++;
 							posInLine++;
@@ -241,16 +271,101 @@ public class Scanner {
 						}
 					}
 				}
+				case DASH -> {
+					switch (ch) {
+						case '>' -> {
+							tokens.add(new Token(Kind.RARROW, pos - 1, 2, line, posInLine - 1));
+							pos++;
+							posInLine++;
+							state = states.START;
+							break;
+						}
+						default -> {
+							tokens.add(new Token(Kind.MINUS, pos - 1, 1, line, posInLine - 1));
+							state = states.START;
+							break;
+						}
+					}
+				}
 				case EQUALS -> {
 					switch (ch) {
 						case '=' -> {
-							tokens.add(new Token(Kind.EQ, pos, 2, line, posInLine));
+							tokens.add(new Token(Kind.EQ, pos - 1, 2, line, posInLine - 1));
 							pos++;
 							posInLine++;
 							break;
 						}
 						default -> {
-							tokens.add(new Token(Kind.ASSIGN, pos, 1, line, posInLine));
+							tokens.add(new Token(Kind.ASSIGN, pos - 1, 1, line, posInLine - 1));
+							state = states.START;
+							break;
+						}
+					}
+				}
+				case GREATER -> {
+					switch (ch) {
+						case '=' -> {
+							tokens.add(new Token(Kind.GE, pos - 1, 2, line, posInLine - 1));
+							pos++;
+							posInLine++;
+							state = states.START;
+							break;
+						}
+						case '>' -> {
+							tokens.add(new Token(Kind.RPIXEL, pos - 1, 2, line, posInLine - 1));
+							pos++;
+							posInLine++;
+							state = states.START;
+							break;
+						}
+						default -> {
+							tokens.add(new Token(Kind.GT, pos - 1, 1, line, posInLine - 1));
+							state = states.START;
+							break;
+						}
+					}
+				}
+				case LESS -> {
+					switch (ch) {
+						case '=' -> {
+							tokens.add(new Token(Kind.LE, pos - 1, 2, line, posInLine - 1));
+							pos++;
+							posInLine++;
+							state = states.START;
+							break;
+						}
+						case '<' -> {
+							tokens.add(new Token(Kind.LPIXEL, pos - 1, 2, line, posInLine - 1));
+							pos++;
+							posInLine++;
+							state = states.START;
+							break;
+						}
+						case '-' -> {
+							tokens.add(new Token(Kind.LARROW, pos - 1, 2, line, posInLine - 1));
+							pos++;
+							posInLine++;
+							state = states.START;
+							break;
+						}
+						default -> {
+							tokens.add(new Token(Kind.LT, pos - 1, 1, line, posInLine - 1));
+							state = states.START;
+							break;
+						}
+					}
+				}
+				case NOT -> {
+					switch (ch) {
+						case '=' -> {
+							tokens.add(new Token(Kind.NEQ, pos - 1, 2, line, posInLine - 1));
+							pos++;
+							posInLine++;
+							state = states.START;
+							break;
+						}
+						default -> {
+							tokens.add(new Token(Kind.EXCL, pos - 1, 1, line, posInLine - 1));
 							state = states.START;
 							break;
 						}

@@ -111,22 +111,79 @@ class ScannerTest {
 	}
 	
 	/**
+	 * Test verifying symbols and escape characters.
+	 * 
+	 * @throws LexicalException
+	 */
+	@Test
+	public void testSymbols() throws Scanner.LexicalException {		
+		
+		String input = """
+				!!=>=><=!>>
+				<<>=
+				""";
+		show(input);
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		checkNext(scanner, EXCL, 0, 1, 1, 1);
+		checkNext(scanner, NEQ, 1, 2, 1, 2);
+		checkNext(scanner, GE, 3, 2, 1, 4);
+		checkNext(scanner, GT, 5, 1, 1, 6);
+		checkNext(scanner, LE, 6, 2, 1, 7);
+		checkNext(scanner, EXCL, 8, 1, 1, 9);
+		checkNext(scanner, RPIXEL, 9, 2, 1, 10);
+		checkNext(scanner, LPIXEL, 12, 2, 2, 1);
+		checkNext(scanner, GE, 14, 2, 2, 3);
+		checkNextIsEOF(scanner);
+	}
+	
+	/**
+	 * Test more symbols and Line terminators.
+	 * 
+	 * @throws LexicalException
+	 */
+	@Test
+	public void testSymbolsAndLineTerms () throws Scanner.LexicalException {		
+		
+		String input = """
+				!!=>=><=!>>-+<-->-\n\r\r\n\n\r<<
+				""";
+		show(input);
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		checkNext(scanner, EXCL, 0, 1, 1, 1);
+		checkNext(scanner, NEQ, 1, 2, 1, 2);
+		checkNext(scanner, GE, 3, 2, 1, 4);
+		checkNext(scanner, GT, 5, 1, 1, 6);
+		checkNext(scanner, LE, 6, 2, 1, 7);
+		checkNext(scanner, EXCL, 8, 1, 1, 9);
+		checkNext(scanner, RPIXEL, 9, 2, 1, 10);
+		checkNext(scanner, MINUS, 11, 1, 1, 12);
+		checkNext(scanner, PLUS, 12, 1, 1, 13);
+		checkNext(scanner, LARROW, 13, 2, 1, 14);
+		checkNext(scanner, RARROW, 15, 2, 1, 16);
+		checkNext(scanner, MINUS, 17, 1, 1, 18);
+		checkNext(scanner, LPIXEL, 24, 2, 6, 1);
+		checkNextIsEOF(scanner);
+	}
+	
+	/**
 	 * Another example test, this time with an ident.  While simple tests like this are useful,
 	 * many errors occur with sequences of tokens, so make sure that you have more complex test cases
 	 * with multiple tokens and test the edge cases. 
 	 * 
 	 * @throws LexicalException
 	 */
-	@Test
-	public void testIdent() throws LexicalException {
-		String input = "ij";
-		Scanner scanner = new Scanner(input).scan();
-		show(input);
-		show(scanner);
-		Token t0 = checkNext(scanner, IDENT, 0, 2, 1, 1);
-		assertEquals("ij", scanner.getText(t0));
-		checkNextIsEOF(scanner);
-	}
+//	@Test
+//	public void testIdent() throws LexicalException {
+//		String input = "ij";
+//		Scanner scanner = new Scanner(input).scan();
+//		show(input);
+//		show(scanner);
+//		Token t0 = checkNext(scanner, IDENT, 0, 2, 1, 1);
+//		assertEquals("ij", scanner.getText(t0));
+//		checkNextIsEOF(scanner);
+//	}
 	
 	
 	/**
@@ -145,15 +202,15 @@ class ScannerTest {
 	 * 
 	 * @throws LexicalException
 	 */
-	@Test
-	public void failUnclosedStringLiteral() throws LexicalException {
-		String input = """
-				"greetings
-				""";
-		show(input);
-		Exception exception = assertThrows(LexicalException.class, () -> {new Scanner(input).scan();});
-		show(exception);
-	}
+//	@Test
+//	public void failUnclosedStringLiteral() throws LexicalException {
+//		String input = """
+//				"greetings
+//				""";
+//		show(input);
+//		Exception exception = assertThrows(LexicalException.class, () -> {new Scanner(input).scan();});
+//		show(exception);
+//	}
 	
 
 }
