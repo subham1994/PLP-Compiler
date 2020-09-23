@@ -515,8 +515,9 @@ public class Scanner {
 	 * @returns the integer value represented by the token
 	 */
 	public int intVal(Token t) throws LexicalException {
-		/* IMPLEMENT THIS */
-		return 0;
+		if (t.kind == Kind.INTLIT) return Integer.valueOf(String.valueOf(Arrays.copyOfRange(chars, t.pos, t.pos + t.length)));
+		else if (t.kind == Kind.CONST) return constants.get(String.valueOf(Arrays.copyOfRange(chars, t.pos, t.pos + t.length)));
+		else throw new LexicalException("Tokens of type " + t.kind + " can not be converted to integer type", t.pos);
 	}
 	
 	/**

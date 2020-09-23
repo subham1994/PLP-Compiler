@@ -174,19 +174,20 @@ class ScannerTest {
 	 * @throws LexicalException
 	 */
 	@Test
-	public void testIntLits () throws Scanner.LexicalException {		
-		
+	public void testIntLits () throws Scanner.LexicalException {
 		String input = """
 				0 1234 9
 				""";
 		show(input);
 		Scanner scanner = new Scanner(input).scan();
 		show(scanner);
-		checkNext(scanner, INTLIT, 0, 1, 1, 1);
-		checkNext(scanner, INTLIT, 2, 4, 1, 3);
-		checkNext(scanner, INTLIT, 7, 1, 1, 8);
+		Token t0 = checkNext(scanner, INTLIT, 0, 1, 1, 1);
+		assertEquals(0, scanner.intVal(t0));
+		Token t1 = checkNext(scanner, INTLIT, 2, 4, 1, 3);
+		assertEquals(1234, scanner.intVal(t1));
+		Token t2 = checkNext(scanner, INTLIT, 7, 1, 1, 8);
+		assertEquals(9, scanner.intVal(t2));
 		checkNextIsEOF(scanner);
-		
 	}
 	
 	@Test
@@ -227,7 +228,8 @@ class ScannerTest {
 		show(scanner);
 		Token t0 = checkNext(scanner, IDENT, 0, 7, 1, 1);
 		assertEquals("ijBLUEc", scanner.getText(t0));
-		checkNext(scanner, CONST, 8, 4, 1, 9);
+		Token t = checkNext(scanner, CONST, 8, 4, 1, 9);
+		assertEquals(0xff000080, scanner.intVal(t));
 		Token t1 = checkNext(scanner, IDENT, 13, 7, 1, 14);
 		assertEquals("screenX", scanner.getText(t1));
 		checkNext(scanner, KW_SCREEN, 21, 6, 1, 22);
@@ -275,7 +277,8 @@ class ScannerTest {
 		Token t1 = checkNext(scanner, IDENT, 3, 6, 1, 4);
 		assertEquals("abc123", scanner.getText(t1));
 		
-		checkNext(scanner, INTLIT, 10, 3, 1, 11);
+		Token t = checkNext(scanner, INTLIT, 10, 3, 1, 11);
+		assertEquals(123, scanner.intVal(t));
 		
 		Token t2 = checkNext(scanner, IDENT, 13, 3, 1, 14);
 		assertEquals("abc", scanner.getText(t2));
