@@ -103,13 +103,12 @@ public class Scanner {
 	 * position of the next token to be returned by a call to nextToken
 	 */
 	private int nextTokenPos = 0;
-	static final char EOFChar = 0;
+//	static final char EOFChar = 0;
 	private final char chars[];
 
 	Scanner(String inputString) {
 		int len = inputString.length();
-		chars = Arrays.copyOf(inputString.toCharArray(), len + 1);
-		chars[len] = EOFChar;
+		chars = Arrays.copyOf(inputString.toCharArray(), len);
 	}
 	
 
@@ -121,9 +120,103 @@ public class Scanner {
 		states state = states.START;
 		
 		while (pos < chars.length) {
+			char ch = chars[pos];
+			
 			switch (state) {
 				case START -> {
+					switch (ch) {
+						case '+' -> {
+							tokens.add(new Token(Kind.PLUS, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case '(' -> {
+							tokens.add(new Token(Kind.LPAREN, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case ')' -> {
+							tokens.add(new Token(Kind.RPAREN, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case '[' -> {
+							tokens.add(new Token(Kind.LSQUARE, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case ']' -> {
+							tokens.add(new Token(Kind.RSQUARE, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case ';' -> {
+							tokens.add(new Token(Kind.SEMI, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case ',' -> {
+							tokens.add(new Token(Kind.COMMA, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case '?' -> {
+							tokens.add(new Token(Kind.Q, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case '*' -> {
+							tokens.add(new Token(Kind.STAR, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case '%' -> {
+							tokens.add(new Token(Kind.MOD, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case '@' -> {
+							tokens.add(new Token(Kind.AT, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case '#' -> {
+							tokens.add(new Token(Kind.HASH, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case '&' -> {
+							tokens.add(new Token(Kind.AND, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case '|' -> {
+							tokens.add(new Token(Kind.OR, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						case 0 -> {
+							tokens.add(new Token(Kind.INTLIT, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
 					
+					}
 				}
 				case EQUALS -> {
 			
@@ -140,7 +233,7 @@ public class Scanner {
 			}
 		}
 		
-//		tokens.add(new Token(Kind.EOF, pos, 0, line, posInLine));
+		tokens.add(new Token(Kind.EOF, pos, 0, line, posInLine));
 		return this;
 	}
 	
