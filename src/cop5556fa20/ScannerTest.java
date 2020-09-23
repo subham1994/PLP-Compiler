@@ -358,7 +358,7 @@ class ScannerTest {
 	@Test
 	public void testMixed() throws LexicalException {
 		String input =  """
-              ijBLUEc //NAVY screenX screen\nX\n "Example\\'String" 123+
+              ijBLUEc //NAVY screenX screen\nX\n "Example\\'Strin\\ng\\r\\n" 123+
               """;
 		Scanner scanner = new Scanner(input).scan();
 		show(scanner);
@@ -366,14 +366,14 @@ class ScannerTest {
 		assertEquals("ijBLUEc", scanner.getText(t0));
 		checkNext(scanner, COMMENT, 8, 21, 1, 9);
 		checkNext(scanner, KW_X, 30, 1, 2, 1);
-		Token t1 = checkNext(scanner, STRINGLIT, 33, 17, 3, 2);
+		Token t1 = checkNext(scanner, STRINGLIT, 33, 23, 3, 2);
 		String text = scanner.getText(t1);
 		System.out.println("Token text");
 		
 		showChars(stringChars(text));
-		assertEquals("Example\'String", scanner.getText(t1));
-		checkNext(scanner, INTLIT, 51, 3, 3, 20);
-		checkNext(scanner, PLUS, 54, 1, 3, 23);
+		assertEquals("Example\'Strin\ng\r\n", scanner.getText(t1));
+		checkNext(scanner, INTLIT, 57, 3, 3, 26);
+		checkNext(scanner, PLUS, 60, 1, 3, 29);
 		checkNextIsEOF(scanner);
 	}
 }
