@@ -18,6 +18,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.Arrays;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -37,6 +39,19 @@ class ScannerTest {
 			System.out.println(input.toString());
 		}
 	}
+	
+	char[] stringChars(String s){
+		 return Arrays.copyOf(s.toCharArray(), s.length()); // input string terminated with null char
+	}
+	
+	void showChars(char[] chars){
+		System.out.println("index\tascii\tcharacter");
+		for(int i = 0; i < chars.length; ++i) {
+			char ch = chars[i];
+			System.out.println(i + "\t" + (int)ch + "\t" + ch);
+		}
+	}
+
 
 	/**
 	 * Retrieves the next token and checks that its kind, position, length, line, and position in line
@@ -81,7 +96,7 @@ class ScannerTest {
 	@Test
 	public void testEmpty() throws Scanner.LexicalException {
 		String input = "";  //The input is the empty string.  This is legal
-		show(input);        //Display the input 
+		show(input);        //Display the input
 		Scanner scanner = new Scanner(input).scan();  //Create a Scanner and initialize it
 		show(scanner);   //Display the Scanner
 		checkNextIsEOF(scanner);  //Check that the only token is the EOF token.
@@ -176,7 +191,7 @@ class ScannerTest {
 	@Test
 	public void testIntLits () throws Scanner.LexicalException {
 		String input = """
-				0 1234 9
+				0 1234 9 -3456
 				""";
 		show(input);
 		Scanner scanner = new Scanner(input).scan();
@@ -187,9 +202,18 @@ class ScannerTest {
 		assertEquals(1234, scanner.intVal(t1));
 		Token t2 = checkNext(scanner, INTLIT, 7, 1, 1, 8);
 		assertEquals(9, scanner.intVal(t2));
+		checkNext(scanner, MINUS, 9, 1, 1, 10);
+		Token t3 = checkNext(scanner, INTLIT, 10, 4, 1, 11);
+		assertEquals(3456, scanner.intVal(t3));
 		checkNextIsEOF(scanner);
 	}
 	
+	
+	/**
+	 * Test throws excption if integer value is out of bound
+	 * 
+	 * @throws LexicalException
+	 */
 	@Test
 	public void testIntOutOfRange () throws Scanner.LexicalException {
 		String input = """
@@ -201,10 +225,16 @@ class ScannerTest {
 	}
 	
 	
-	@Test
+	/**
+	 * Test throws excption if input has invalid characters
+	 * 
+	 * @throws LexicalException
+	 */
+//	@Test
 	public void testInvalidInput () throws Scanner.LexicalException {
 		String input = """
-				\\
+				"abc
+				def"
 				""";
 		show(input);
 		Exception exception = assertThrows(Scanner.LexicalException.class, () -> {new Scanner(input).scan();});
@@ -305,15 +335,46 @@ class ScannerTest {
 	 * 
 	 * @throws LexicalException
 	 */
-//	@Test
-//	public void failUnclosedStringLiteral() throws LexicalException {
-//		String input = """
-//				"greetings
-//				""";
-//		show(input);
-//		Exception exception = assertThrows(LexicalException.class, () -> {new Scanner(input).scan();});
-//		show(exception);
-//	}
+	@Test
+	public void failUnclosedStringLiteral() throws LexicalException {
+		String input = """
+				"greetings
+				""";
+		show(input);
+		Exception exception = assertThrows(LexicalException.class, () -> {new Scanner(input).scan();});
+		show(exception);
+	}
 	
-
+	@Test
+	public void testStringBasic() throws LexicalException {
+		String input =  """
+              \n "Example\\nString" 
+              """;
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		checkNext(scanner, STRINGLIT, 2, 17, 2, 2);
+		checkNextIsEOF(scanner);
+	}
+	
+	@Test
+	public void testMixed() throws LexicalException {
+		String input =  """
+              ijBLUEc //NAVY screenX screen\nX\n "Example\\"String" 123+
+              """;
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		Token t0 = checkNext(scanner, IDENT, 0, 7, 1, 1);
+		assertEquals("ijBLUEc", scanner.getText(t0));
+		checkNext(scanner, COMMENT, 8, 21, 1, 9);
+		checkNext(scanner, KW_X, 30, 1, 2, 1);
+		Token t1 = checkNext(scanner, STRINGLIT, 33, 17, 3, 2);
+		String text = scanner.getText(t1);
+		System.out.println("Token text");
+		
+		showChars(stringChars(text));
+		assertEquals("Example\"String", scanner.getText(t1));
+		checkNext(scanner, INTLIT, 51, 3, 3, 20);
+		checkNext(scanner, PLUS, 54, 1, 3, 23);
+		checkNextIsEOF(scanner);
+	}
 }

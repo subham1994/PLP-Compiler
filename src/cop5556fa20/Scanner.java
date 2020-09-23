@@ -58,6 +58,38 @@ public class Scanner {
 		LSQUARE/* [ */, RSQUARE/* ] */, LPIXEL /* << */, RPIXEL /* >> */,  SEMI/* ; */, COMMA/* , */,  EOF
 	}
 	
+	
+	private char asciiCode (char c) {
+		switch (c) {
+			case 'n' -> {
+				return '\n';
+			}
+			case 'r' -> {
+				return '\r';
+			}
+			case 'b' -> {
+				return '\b';
+			}
+			case 'f' -> {
+				return '\f';
+			}
+			case 't' -> {
+				return '\t';
+			}
+			case '\'' -> {
+				return '\'';
+			}
+			case '\"' -> {
+				return '\"';
+			}
+			case '\\' -> {
+				return '\\';
+			}
+		}
+		
+		return c;
+	}
+	
 
 	/**
 	 * Returns the text of the token.  If the token represents a String literal, then
@@ -70,6 +102,18 @@ public class Scanner {
 	public String getText(Token token) {
 		if (token.kind == Kind.IDENT) {
 			return String.valueOf(Arrays.copyOfRange(chars, token.pos, token.pos + token.length));
+		} else if (token.kind == Kind.STRINGLIT) {
+			int lower = token.pos + 1;
+			int upper = token.pos + token.length - 2;
+			
+			String s = "";
+			for (; lower <= upper; lower++) {
+				if (chars[lower] == '\\' && lower < upper) {
+					s += asciiCode(chars[lower + 1]);
+					lower++;
+				} else s += chars[lower];
+			}
+			return s;
 		}
 		
 		return "";
@@ -136,6 +180,7 @@ public class Scanner {
 		int line = 1;
 		int posInLine = 1;
 		String temp = "";
+		int escapePos = -1;
 		states state = states.START;
 		
 		while (pos < chars.length) {
@@ -311,6 +356,11 @@ public class Scanner {
 							
 						}
 						case '\"' -> {
+							temp += ch;
+							if (pos + 1 == chars.length) throw new LexicalException("Invalid character '" + ch + "' passed as input at line " + line + " pos " + posInLine, pos);
+							pos++;
+							posInLine++;
+							state = states.STRING_LIT;
 							break;
 						}
 						default -> {
@@ -433,7 +483,49 @@ public class Scanner {
 					break;
 				}
 				case STRING_LIT -> {
-					
+					switch (ch) {
+						case '\n', '\r', '\t', '\b', '\f', '\'' -> {
+							throw new LexicalException("Invalid character '" + ch + "' passed as input at line " + line + " pos " + posInLine, pos);
+						}
+						case '\\' -> {
+							boolean isValidEscapeChar = false;
+							
+							if (pos + 1 != chars.length) {
+								char c = chars[pos + 1];
+								if (c == 'n' || c == 'r' || c == 't' || c == 'b' || c == 'f' || c == '\'' || c == '\"' || c == '\\') {
+									isValidEscapeChar = true;
+									escapePos = pos;
+								}
+							}
+							
+							if (!isValidEscapeChar) throw new LexicalException("Invalid character '" + ch + "' passed as input at line " + line + " pos " + posInLine, pos);
+							else {
+								temp += ch;
+								pos++;
+								posInLine++;
+								break;
+							}
+						}
+						case '\"' -> {
+							temp += ch;
+							if (pos != escapePos + 1) {								
+								tokens.add(new Token(Kind.STRINGLIT, pos - temp.length() + 1, temp.length(), line, posInLine - temp.length() + 1));
+								temp = "";
+								state = states.START;
+								escapePos = -1;
+							}
+							pos++;
+							posInLine++;
+							break;
+						}
+						default -> {
+							temp += ch;
+							if (pos + 1 == chars.length) throw new LexicalException("Invalid character '" + ch + "' passed as input at line " + line + " pos " + posInLine, pos);
+							pos++;
+							posInLine++;
+							break;
+						}
+					}
 				}
 				case IDENT -> {
 					if (Character.isJavaIdentifierStart(ch) || "0123456789".indexOf(ch) > -1) {
