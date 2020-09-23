@@ -177,13 +177,14 @@ class ScannerTest {
 	public void testIntLits () throws Scanner.LexicalException {		
 		
 		String input = """
-				0 1234
+				0 1234 9
 				""";
 		show(input);
 		Scanner scanner = new Scanner(input).scan();
 		show(scanner);
 		checkNext(scanner, INTLIT, 0, 1, 1, 1);
 		checkNext(scanner, INTLIT, 2, 4, 1, 3);
+		checkNext(scanner, INTLIT, 7, 1, 1, 8);
 		checkNextIsEOF(scanner);
 		
 	}
@@ -233,7 +234,7 @@ class ScannerTest {
 	 */
 	@Test
 	public void testIdent() throws LexicalException {
-		String input = "ij abc123";
+		String input = "ij abc123 123abc c";
 		Scanner scanner = new Scanner(input).scan();
 		show(input);
 		show(scanner);
@@ -242,6 +243,14 @@ class ScannerTest {
 		
 		Token t1 = checkNext(scanner, IDENT, 3, 6, 1, 4);
 		assertEquals("abc123", scanner.getText(t1));
+		
+		checkNext(scanner, INTLIT, 10, 3, 1, 11);
+		
+		Token t2 = checkNext(scanner, IDENT, 13, 3, 1, 14);
+		assertEquals("abc", scanner.getText(t2));
+		
+		Token t3 = checkNext(scanner, IDENT, 17, 1, 1, 18);
+		assertEquals("c", scanner.getText(t3));
 		checkNextIsEOF(scanner);
 	}
 	

@@ -46,7 +46,7 @@ public class Scanner {
 	}
 	
 	public static enum Kind {
-		IDENT, INTLIT, STRINGLIT, CONST,
+		IDENT, INTLIT, STRINGLIT, CONST, COMMENT,
 		KW_X/* X */,  KW_Y/* Y */, KW_WIDTH/* width */,KW_HEIGHT/* height */, 
 		KW_SCREEN/* screen */, KW_SCREEN_WIDTH /* screen_width */, KW_SCREEN_HEIGHT /*screen_height */,
 		KW_image/* image */, KW_int/* int */, KW_string /* string */,
@@ -241,30 +241,35 @@ public class Scanner {
 							break;
 						}
 						case '-' -> {
+							if (pos + 1 == chars.length) tokens.add(new Token(Kind.MINUS, pos, 1, line, posInLine));
 							pos++;
 							posInLine++;
 							state = states.DASH;
 							break;
 						}
 						case '>' -> {
+							if (pos + 1 == chars.length) tokens.add(new Token(Kind.GT, pos, 1, line, posInLine));
 							pos++;
 							posInLine++;
 							state = states.GREATER;
 							break;
 						}
 						case '<' -> {
+							if (pos + 1 == chars.length) tokens.add(new Token(Kind.LT, pos, 1, line, posInLine));
 							pos++;
 							posInLine++;
 							state = states.LESS;
 							break;
 						}
 						case '!' -> {
+							if (pos + 1 == chars.length) tokens.add(new Token(Kind.EXCL, pos, 1, line, posInLine));
 							pos++;
 							posInLine++;
 							state = states.NOT;
 							break;
 						}
 						case '=' -> {
+							if (pos + 1 == chars.length) tokens.add(new Token(Kind.ASSIGN, pos, 1, line, posInLine));
 							pos++;
 							posInLine++;
 							state = states.EQUALS;
