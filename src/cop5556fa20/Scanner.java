@@ -41,7 +41,7 @@ public class Scanner {
 	}
 	
 	private static enum states {
-		START, EQUALS, IDENT_START, IDENT_PART, DIGITS
+		START, EQUALS, IDENT_START, IDENT_PART, DIGITS, LINE_TERM
 	}
 	
 	public static enum Kind {
@@ -215,11 +215,51 @@ public class Scanner {
 							posInLine++;
 							break;
 						}
-					
+						case '=' -> {
+							pos++;
+							posInLine++;
+							state = states.EQUALS;
+							break;
+						}
+						case '\t', ' ' -> {
+							pos++;
+							posInLine++;
+							break;
+						}
+						case '\n' -> {
+							pos++;
+							posInLine = 1;
+							line++;
+							break;
+						}
+						case '\r' -> {
+							pos++;
+							posInLine = 1;
+							line++;
+							state = states.LINE_TERM;
+							break;
+						}
 					}
 				}
 				case EQUALS -> {
-			
+					switch (ch) {
+						case '=' -> {
+							tokens.add(new Token(Kind.EQ, pos, 2, line, posInLine));
+							pos++;
+							posInLine++;
+							break;
+						}
+						default -> {
+							tokens.add(new Token(Kind.ASSIGN, pos, 1, line, posInLine));
+							state = states.START;
+							break;
+						}
+					}
+				}
+				case LINE_TERM -> {
+					if (ch == '\n') pos++;
+					state = states.START;
+					break;
 				}
 				case IDENT_START -> {
 					
