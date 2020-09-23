@@ -230,11 +230,10 @@ class ScannerTest {
 	 * 
 	 * @throws LexicalException
 	 */
-//	@Test
+	@Test
 	public void testInvalidInput () throws Scanner.LexicalException {
 		String input = """
-				"abc
-				def"
+				"\\"
 				""";
 		show(input);
 		Exception exception = assertThrows(Scanner.LexicalException.class, () -> {new Scanner(input).scan();});
@@ -359,7 +358,7 @@ class ScannerTest {
 	@Test
 	public void testMixed() throws LexicalException {
 		String input =  """
-              ijBLUEc //NAVY screenX screen\nX\n "Example\\"String" 123+
+              ijBLUEc //NAVY screenX screen\nX\n "Example\\'String" 123+
               """;
 		Scanner scanner = new Scanner(input).scan();
 		show(scanner);
@@ -372,7 +371,7 @@ class ScannerTest {
 		System.out.println("Token text");
 		
 		showChars(stringChars(text));
-		assertEquals("Example\"String", scanner.getText(t1));
+		assertEquals("Example\'String", scanner.getText(t1));
 		checkNext(scanner, INTLIT, 51, 3, 3, 20);
 		checkNext(scanner, PLUS, 54, 1, 3, 23);
 		checkNextIsEOF(scanner);

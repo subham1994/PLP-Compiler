@@ -186,6 +186,8 @@ public class Scanner {
 		while (pos < chars.length) {
 			char ch = chars[pos];
 			
+			if (ch < 0 || ch > 127) throw new LexicalException("Non-ascii character '" + ch + "' passed as input at line " + line + " pos " + posInLine, pos);
+			
 			switch (state) {
 				case START -> {
 					switch (ch) {
@@ -484,7 +486,7 @@ public class Scanner {
 				}
 				case STRING_LIT -> {
 					switch (ch) {
-						case '\n', '\r', '\t', '\b', '\f', '\'' -> {
+						case '\n', '\r', '\t', '\b', '\f' -> {
 							throw new LexicalException("Invalid character '" + ch + "' passed as input at line " + line + " pos " + posInLine, pos);
 						}
 						case '\\' -> {
