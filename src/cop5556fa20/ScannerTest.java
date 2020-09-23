@@ -189,14 +189,24 @@ class ScannerTest {
 		
 	}
 	
+	@Test
 	public void testIntOutOfRange () throws Scanner.LexicalException {
 		String input = """
 				0 1234 444444444444444444
 				""";
 		show(input);
-		Scanner scanner = new Scanner(input).scan();
-		show(scanner);
 		Exception exception = assertThrows(LexicalException.class, () -> {new Scanner(input).scan();});
+		show(exception);
+	}
+	
+	
+	@Test
+	public void testInvalidInput () throws Scanner.LexicalException {
+		String input = """
+				\\
+				""";
+		show(input);
+		Exception exception = assertThrows(Scanner.LexicalException.class, () -> {new Scanner(input).scan();});
 		show(exception);
 	}
 	
@@ -222,6 +232,27 @@ class ScannerTest {
 		assertEquals("screenX", scanner.getText(t1));
 		checkNext(scanner, KW_SCREEN, 21, 6, 1, 22);
 		checkNext(scanner, KW_X, 28, 1, 2, 1);
+		checkNextIsEOF(scanner);
+	}
+	
+	/**
+	 * Test comments
+	 * 
+	 * @throws LexicalException
+	 */
+	@Test
+	public void testComments () throws Scanner.LexicalException {		
+		
+		String input = """
+				ijBLUEc //NAVY screenX screen\nX
+				""";
+		show(input);
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		Token t0 = checkNext(scanner, IDENT, 0, 7, 1, 1);
+		assertEquals("ijBLUEc", scanner.getText(t0));
+		checkNext(scanner, COMMENT, 8, 21, 1, 9);
+		checkNext(scanner, KW_X, 30, 1, 2, 1);
 		checkNextIsEOF(scanner);
 	}
 	

@@ -42,7 +42,7 @@ public class Scanner {
 	}
 	
 	private static enum states {
-		START, EQUALS, IDENT, DIGITS, LINE_TERM, GREATER, LESS, NOT, DASH, STRING_LIT
+		START, EQUALS, IDENT, DIGITS, LINE_TERM, GREATER, LESS, NOT, DASH, STRING_LIT, R_SLASH, COMMENT
 	}
 	
 	public static enum Kind {
@@ -301,6 +301,15 @@ public class Scanner {
 							state = states.DIGITS;
 							break;
 						}
+						case '/' -> {
+							temp += ch;
+							if (pos + 1 == chars.length) tokens.add(new Token(Kind.DIV, pos, 1, line, posInLine));
+							pos++;
+							posInLine++;
+							state = states.R_SLASH;
+							break;
+							
+						}
 						case '\"' -> {
 							break;
 						}
@@ -460,6 +469,36 @@ public class Scanner {
 							break;
 						}
 					}
+				}
+				case R_SLASH -> {
+					switch (ch) {
+						case '/' -> {
+							temp += ch;
+							if (pos + 1 == chars.length) tokens.add(new Token(Kind.COMMENT, pos - 1, 2, line, posInLine - 1));
+							pos++;
+							posInLine++;
+							state = states.COMMENT;
+							break;
+						}
+						default -> {
+							tokens.add(new Token(Kind.DIV, pos - 1, 1, line, posInLine - 1));
+							temp = "";
+							state = states.START;
+							break;
+						}
+					}
+				}
+				case COMMENT -> {
+					if (ch == '\n' || ch == '\r' || pos + 1 == chars.length) {
+						tokens.add(new Token(Kind.COMMENT, pos - temp.length(), temp.length(), line, posInLine - temp.length()));
+						temp = "";
+						state = states.START;
+					} else {
+						temp += ch;
+						pos++;
+						posInLine++;
+					}
+					break;
 				}
 			}
 		}
