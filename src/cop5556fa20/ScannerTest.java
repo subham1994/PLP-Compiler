@@ -146,7 +146,7 @@ class ScannerTest {
 	public void testSymbolsAndLineTerms () throws Scanner.LexicalException {		
 		
 		String input = """
-				!!=>=><=!>>-+<-->-\n\r\r\n\n\r<<
+				!!=>=><=!>>-+<-->-\n\r\r\n\n\r<<<
 				""";
 		show(input);
 		Scanner scanner = new Scanner(input).scan();
@@ -164,6 +164,7 @@ class ScannerTest {
 		checkNext(scanner, RARROW, 15, 2, 1, 16);
 		checkNext(scanner, MINUS, 17, 1, 1, 18);
 		checkNext(scanner, LPIXEL, 24, 2, 6, 1);
+		checkNext(scanner, LT, 26, 1, 6, 3);
 		checkNextIsEOF(scanner);
 	}
 	

@@ -290,6 +290,7 @@ public class Scanner {
 						}
 						case '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
 							temp += ch;
+							if (pos + 1 == chars.length) addIntLitToken(temp, pos, line, posInLine);
 							pos++;
 							posInLine++;
 							state = states.DIGITS;
@@ -301,6 +302,7 @@ public class Scanner {
 						default -> {
 							if (Character.isJavaIdentifierStart(ch)) {
 								temp += ch;
+								if (pos + 1 == chars.length) addIdentConstKWTokenConditionally(temp, pos, line, posInLine);
 								pos++;
 								posInLine++;
 								state = states.IDENT;
