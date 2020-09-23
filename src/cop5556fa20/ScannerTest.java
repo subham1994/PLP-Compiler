@@ -168,22 +168,81 @@ class ScannerTest {
 	}
 	
 	/**
+	 * Test Integer literals.
+	 * 
+	 * @throws LexicalException
+	 */
+	@Test
+	public void testIntLits () throws Scanner.LexicalException {		
+		
+		String input = """
+				0 1234
+				""";
+		show(input);
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		checkNext(scanner, INTLIT, 0, 1, 1, 1);
+		checkNext(scanner, INTLIT, 2, 4, 1, 3);
+		checkNextIsEOF(scanner);
+		
+	}
+	
+	public void testIntOutOfRange () throws Scanner.LexicalException {
+		String input = """
+				0 1234 444444444444444444
+				""";
+		show(input);
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		Exception exception = assertThrows(LexicalException.class, () -> {new Scanner(input).scan();});
+		show(exception);
+	}
+	
+	
+	/**
+	 * Test keywords and constants.
+	 * 
+	 * @throws LexicalException
+	 */
+	@Test
+	public void testKeywordsAndConst () throws Scanner.LexicalException {		
+		
+		String input = """
+				ijBLUEc NAVY screenX screen\nX
+				""";
+		show(input);
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		Token t0 = checkNext(scanner, IDENT, 0, 7, 1, 1);
+		assertEquals("ijBLUEc", scanner.getText(t0));
+		checkNext(scanner, CONST, 8, 4, 1, 9);
+		Token t1 = checkNext(scanner, IDENT, 13, 7, 1, 14);
+		assertEquals("screenX", scanner.getText(t1));
+		checkNext(scanner, KW_SCREEN, 21, 6, 1, 22);
+		checkNext(scanner, KW_X, 28, 1, 2, 1);
+		checkNextIsEOF(scanner);
+	}
+	
+	/**
 	 * Another example test, this time with an ident.  While simple tests like this are useful,
 	 * many errors occur with sequences of tokens, so make sure that you have more complex test cases
 	 * with multiple tokens and test the edge cases. 
 	 * 
 	 * @throws LexicalException
 	 */
-//	@Test
-//	public void testIdent() throws LexicalException {
-//		String input = "ij";
-//		Scanner scanner = new Scanner(input).scan();
-//		show(input);
-//		show(scanner);
-//		Token t0 = checkNext(scanner, IDENT, 0, 2, 1, 1);
-//		assertEquals("ij", scanner.getText(t0));
-//		checkNextIsEOF(scanner);
-//	}
+	@Test
+	public void testIdent() throws LexicalException {
+		String input = "ij abc123";
+		Scanner scanner = new Scanner(input).scan();
+		show(input);
+		show(scanner);
+		Token t0 = checkNext(scanner, IDENT, 0, 2, 1, 1);
+		assertEquals("ij", scanner.getText(t0));
+		
+		Token t1 = checkNext(scanner, IDENT, 3, 6, 1, 4);
+		assertEquals("abc123", scanner.getText(t1));
+		checkNextIsEOF(scanner);
+	}
 	
 	
 	/**

@@ -17,6 +17,7 @@ package cop5556fa20;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class Scanner {
 	
@@ -41,7 +42,7 @@ public class Scanner {
 	}
 	
 	private static enum states {
-		START, EQUALS, IDENT_START, IDENT_PART, DIGITS, LINE_TERM, GREATER, LESS, NOT, DASH
+		START, EQUALS, IDENT, DIGITS, LINE_TERM, GREATER, LESS, NOT, DASH, STRING_LIT
 	}
 	
 	public static enum Kind {
@@ -67,8 +68,11 @@ public class Scanner {
 	 * @return
 	 */
 	public String getText(Token token) {
-		/* IMPLEMENT THIS */
-		return null;
+		if (token.kind == Kind.IDENT) {
+			return String.valueOf(Arrays.copyOfRange(chars, token.pos, token.pos + token.length));
+		}
+		
+		return "";
 	}
 	
 	
@@ -111,12 +115,27 @@ public class Scanner {
 		chars = Arrays.copyOf(inputString.toCharArray(), len);
 	}
 	
+	private void addIntLitToken (String s, int pos, int line, int posInLine) throws LexicalException {
+		try {
+			Integer.parseInt(s);
+		} catch (NumberFormatException e) {
+			throw new LexicalException("Integer literal value out of range; line " + line + " pos " + (posInLine - s.length() + 1), pos - s.length() + 1);
+		}
+		tokens.add(new Token(Kind.INTLIT, pos - s.length() + 1, s.length(), line, posInLine - s.length() + 1));
+	}
+	
+	private void addIdentConstKWTokenConditionally (String s, int pos, int line, int posInLine) {
+		if (constants.containsKey(s)) tokens.add(new Token(Kind.CONST, pos - s.length() + 1, s.length(), line, posInLine - s.length() + 1));
+		else if (keywords.containsKey(s)) tokens.add(new Token(keywords.get(s), pos - s.length() + 1, s.length(), line, posInLine - s.length() + 1));
+		else tokens.add(new Token(Kind.IDENT, pos - s.length() + 1, s.length(), line, posInLine - s.length() + 1));
+	}
 
 	
 	public Scanner scan() throws LexicalException {
 		int pos = 0;
 		int line = 1;
 		int posInLine = 1;
+		String temp = "";
 		states state = states.START;
 		
 		while (pos < chars.length) {
@@ -215,7 +234,7 @@ public class Scanner {
 							posInLine++;
 							break;
 						}
-						case 0 -> {
+						case '0' -> {
 							tokens.add(new Token(Kind.INTLIT, pos, 1, line, posInLine));
 							pos++;
 							posInLine++;
@@ -251,7 +270,7 @@ public class Scanner {
 							state = states.EQUALS;
 							break;
 						}
-						case '\t', ' ' -> {
+						case '\t', ' ', '\f' -> {
 							pos++;
 							posInLine++;
 							break;
@@ -268,6 +287,27 @@ public class Scanner {
 							line++;
 							state = states.LINE_TERM;
 							break;
+						}
+						case '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
+							temp += ch;
+							pos++;
+							posInLine++;
+							state = states.DIGITS;
+							break;
+						}
+						case '\"' -> {
+							break;
+						}
+						default -> {
+							if (Character.isJavaIdentifierStart(ch)) {
+								temp += ch;
+								pos++;
+								posInLine++;
+								state = states.IDENT;
+								break;
+							} else {
+								throw new LexicalException("Unknown character '" + ch + "' found at " + line + " pos " + posInLine, pos);
+							}
 						}
 					}
 				}
@@ -376,14 +416,43 @@ public class Scanner {
 					state = states.START;
 					break;
 				}
-				case IDENT_START -> {
+				case STRING_LIT -> {
 					
 				}
-				case IDENT_PART -> {
+				case IDENT -> {
+					if (Character.isJavaIdentifierStart(ch) || "0123456789".indexOf(ch) > -1) {
+						temp += ch;
+						
+						if (pos + 1 == chars.length) addIdentConstKWTokenConditionally(temp, pos, line, posInLine);
+						
+						pos++;
+						posInLine++;
+					} else {
+						addIdentConstKWTokenConditionally(temp, pos - 1, line, posInLine - 1);
+						temp = "";
+						state = states.START;
+					}
 					
+					break;
 				}
 				case DIGITS -> {
-					
+					switch (ch) {
+						case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
+							temp += ch;
+							
+							if (pos + 1 == chars.length) addIntLitToken(temp, pos, line, posInLine);
+							
+							pos++;
+							posInLine++;
+							break;
+						}
+						default -> {
+							addIntLitToken(temp, pos - 1, line, posInLine - 1);
+							temp = "";
+							state = states.START;
+							break;
+						}
+					}
 				}
 			}
 		}
@@ -405,8 +474,29 @@ public class Scanner {
 	}
 	
 	/**
+	 * Hashmap containing the values of the reserved words.
+	 * 
+	 */
+	private static HashMap<String, Kind> keywords;
+	static {
+		keywords = new HashMap<String, Kind>();	
+		keywords.put("X", Scanner.Kind.KW_X);
+		keywords.put("Y", Scanner.Kind.KW_Y);
+		keywords.put("width", Scanner.Kind.KW_WIDTH);
+		keywords.put("height", Scanner.Kind.KW_HEIGHT);
+		keywords.put("screen", Scanner.Kind.KW_SCREEN);
+		keywords.put("screen_width", Scanner.Kind.KW_SCREEN_WIDTH);
+		keywords.put("screen_height", Scanner.Kind.KW_SCREEN_HEIGHT);
+		keywords.put("image", Scanner.Kind.KW_image);
+		keywords.put("int", Scanner.Kind.KW_int);
+		keywords.put("string", Scanner.Kind.KW_string);
+		keywords.put("red", Scanner.Kind.KW_RED);
+		keywords.put("green", Scanner.Kind.KW_GREEN);
+		keywords.put("blue", Scanner.Kind.KW_BLUE);
+	}
+	
+	/**
 	 * Hashmap containing the values of the predefined colors.
-	 * Included for your convenience.  
 	 * 
 	 */
 	private static HashMap<String, Integer> constants;
