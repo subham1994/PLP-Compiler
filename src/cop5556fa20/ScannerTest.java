@@ -282,7 +282,6 @@ class ScannerTest {
 		show(scanner);
 		Token t0 = checkNext(scanner, IDENT, 0, 7, 1, 1);
 		assertEquals("ijBLUEc", scanner.getText(t0));
-		checkNext(scanner, COMMENT, 8, 21, 1, 9);
 		checkNext(scanner, KW_X, 30, 1, 2, 1);
 		checkNextIsEOF(scanner);
 	}
@@ -355,6 +354,7 @@ class ScannerTest {
 		checkNextIsEOF(scanner);
 	}
 	
+	
 	@Test
 	public void testMixed() throws LexicalException {
 		String input =  """
@@ -364,7 +364,6 @@ class ScannerTest {
 		show(scanner);
 		Token t0 = checkNext(scanner, IDENT, 0, 7, 1, 1);
 		assertEquals("ijBLUEc", scanner.getText(t0));
-		checkNext(scanner, COMMENT, 8, 21, 1, 9);
 		checkNext(scanner, KW_X, 30, 1, 2, 1);
 		Token t1 = checkNext(scanner, STRINGLIT, 33, 23, 3, 2);
 		String text = scanner.getText(t1);
@@ -375,5 +374,120 @@ class ScannerTest {
 		checkNext(scanner, INTLIT, 57, 3, 3, 26);
 		checkNext(scanner, PLUS, 60, 1, 3, 29);
 		checkNextIsEOF(scanner);
+	}
+	
+	@Test
+	public void testFailedA () throws LexicalException {
+		String input = "= == === ==== =; =\n =\n=\n";
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		checkNext(scanner, ASSIGN, 0, 1, 1, 1);
+		checkNext(scanner, EQ, 2, 2, 1, 3);
+		checkNext(scanner, EQ, 5, 2, 1, 6);
+		checkNext(scanner, ASSIGN, 7, 1, 1, 8);
+		checkNext(scanner, EQ, 9, 2, 1, 10);
+		checkNext(scanner, EQ, 11, 2, 1, 12);
+		checkNext(scanner, ASSIGN, 14, 1, 1, 15);
+		checkNext(scanner, SEMI, 15, 1, 1, 16);
+		checkNext(scanner, ASSIGN, 17, 1, 1, 18);
+		checkNext(scanner, ASSIGN, 20, 1, 2, 2);
+		checkNext(scanner, ASSIGN, 22, 1, 3, 1);
+		checkNextIsEOF(scanner);
+	}
+	
+	@Test
+	public void testFailedB () throws LexicalException {
+		String input = """
+				<<- ->>\n<<== <= <<=\n
+				""";
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		checkNext(scanner, LPIXEL, 0, 2, 1, 1);
+		checkNext(scanner, MINUS, 2, 1, 1, 3);
+		checkNext(scanner, RARROW, 4, 2, 1, 5);
+		checkNext(scanner, GT, 6, 1, 1, 7);
+		checkNext(scanner, LPIXEL, 8, 2, 2, 1);
+		checkNext(scanner, EQ, 10, 2, 2, 3);
+		checkNext(scanner, LE, 13, 2, 2, 6);
+		checkNext(scanner, LPIXEL, 16, 2, 2, 9);
+		checkNext(scanner, ASSIGN, 18, 1, 2, 11);
+		checkNextIsEOF(scanner);
+	}
+	
+	@Test
+	public void testFailedC () throws LexicalException {
+		String input = """
+				//---\nabc def // ...\n33 jkl\n//xx\n
+				""";
+		
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		checkNext(scanner, IDENT, 6, 3, 2, 1);
+		checkNext(scanner, IDENT, 10, 3, 2, 5);
+		checkNext(scanner, INTLIT, 21, 2, 3, 1);
+		checkNext(scanner, IDENT, 24, 3, 3, 4);
+		checkNextIsEOF(scanner);
+	}
+	
+	@Test
+	public void testFailedD () throws LexicalException {
+		String input = """
+				x=\"\b\";
+				""";
+		
+		show(input);
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		checkNext(scanner, IDENT, 0, 1, 1, 1);
+		checkNext(scanner, ASSIGN, 1, 1, 1, 2);
+		Token t1 = checkNext(scanner, STRINGLIT, 2, 3, 1, 3);
+		checkNext(scanner, SEMI, 5, 1, 1, 6);
+		checkNextIsEOF(scanner);
+		
+		String text = scanner.getText(t1);
+		System.out.println("Token text");
+		
+		showChars(stringChars(text));
+		assertEquals("\b", scanner.getText(t1));
+		
+	}
+	
+	@Test
+	public void testStringEscapeA () throws LexicalException {
+		String input = """
+				x="abc\\\nef";
+				""";
+		
+		show(input);
+		Exception exception = assertThrows(LexicalException.class, () -> {new Scanner(input).scan();});
+		show(exception);
+		
+	}
+	
+	@Test
+	public void testStringEscapeB () throws LexicalException {
+		String input = """
+				x="\\";
+				""";
+		
+		show(input);
+		Exception exception = assertThrows(LexicalException.class, () -> {new Scanner(input).scan();});
+		show(exception);
+		
+	}
+	
+	@Test
+	public void testStringEscapeC () throws LexicalException {
+		String input = """
+				x="abc\\\\nef";
+				""";
+		
+		show(input);
+		Scanner scanner = new Scanner(input).scan();
+		show(scanner);
+		scanner.nextToken();
+		scanner.nextToken();
+		String stringLit = scanner.getText(scanner.nextToken());
+		assertEquals("abc\\nef", stringLit);
 	}
 }

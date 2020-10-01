@@ -46,7 +46,7 @@ public class Scanner {
 	}
 	
 	public static enum Kind {
-		IDENT, INTLIT, STRINGLIT, CONST, COMMENT,
+		IDENT, INTLIT, STRINGLIT, CONST,
 		KW_X/* X */,  KW_Y/* Y */, KW_WIDTH/* width */,KW_HEIGHT/* height */, 
 		KW_SCREEN/* screen */, KW_SCREEN_WIDTH /* screen_width */, KW_SCREEN_HEIGHT /*screen_height */,
 		KW_image/* image */, KW_int/* int */, KW_string /* string */,
@@ -349,13 +349,11 @@ public class Scanner {
 							break;
 						}
 						case '/' -> {
-							temp += ch;
 							if (pos + 1 == chars.length) tokens.add(new Token(Kind.DIV, pos, 1, line, posInLine));
 							pos++;
 							posInLine++;
 							state = states.R_SLASH;
 							break;
-							
 						}
 						case '\"' -> {
 							temp += ch;
@@ -399,6 +397,7 @@ public class Scanner {
 					switch (ch) {
 						case '=' -> {
 							tokens.add(new Token(Kind.EQ, pos - 1, 2, line, posInLine - 1));
+							state = state.START;
 							pos++;
 							posInLine++;
 							break;
@@ -486,7 +485,7 @@ public class Scanner {
 				}
 				case STRING_LIT -> {
 					switch (ch) {
-						case '\n', '\r', '\t', '\b', '\f' -> {
+						case '\n', '\r' -> {
 							throw new LexicalException("Invalid character '" + ch + "' passed as input at line " + line + " pos " + posInLine, pos);
 						}
 						case '\\' -> {
@@ -567,8 +566,6 @@ public class Scanner {
 				case R_SLASH -> {
 					switch (ch) {
 						case '/' -> {
-							temp += ch;
-							if (pos + 1 == chars.length) tokens.add(new Token(Kind.COMMENT, pos - 1, 2, line, posInLine - 1));
 							pos++;
 							posInLine++;
 							state = states.COMMENT;
@@ -576,7 +573,6 @@ public class Scanner {
 						}
 						default -> {
 							tokens.add(new Token(Kind.DIV, pos - 1, 1, line, posInLine - 1));
-							temp = "";
 							state = states.START;
 							break;
 						}
@@ -584,11 +580,8 @@ public class Scanner {
 				}
 				case COMMENT -> {
 					if (ch == '\n' || ch == '\r' || pos + 1 == chars.length) {
-						tokens.add(new Token(Kind.COMMENT, pos - temp.length(), temp.length(), line, posInLine - temp.length()));
-						temp = "";
 						state = states.START;
 					} else {
-						temp += ch;
 						pos++;
 						posInLine++;
 					}
