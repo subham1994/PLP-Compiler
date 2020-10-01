@@ -397,7 +397,7 @@ public class Scanner {
 					switch (ch) {
 						case '=' -> {
 							tokens.add(new Token(Kind.EQ, pos - 1, 2, line, posInLine - 1));
-							state = state.START;
+							state = states.START;
 							pos++;
 							posInLine++;
 							break;
