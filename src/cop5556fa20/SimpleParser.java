@@ -113,25 +113,7 @@ public class SimpleParser {
 		}
 	}
 	
-	private void statement () throws SyntaxException, LexicalException {
-//		match(Kind.IDENT);
-//		
-//		if (t.kind() == Kind.RARROW) {
-//			consume();
-//			imageOutStatement();
-//		} else if (t.kind() == Kind.LARROW) {
-//			consume();
-//			imageInStatement();
-//		} else if (t.kind() == Kind.ASSIGN) {
-//			consume();
-//			
-//		}
-	}
-	
 	private void imageOutStatement () throws SyntaxException, LexicalException {
-		match(Kind.IDENT);
-		match(Kind.RARROW);
-		
 		if (t.kind() == Kind.KW_SCREEN) {
 			consume();
 			
@@ -145,34 +127,47 @@ public class SimpleParser {
 		} else expression();
 	}
 	
-	private void imageInStatement () throws SyntaxException, LexicalException {
-		match(Kind.IDENT);
-		match(Kind.LARROW);
-		expression();
-	}
-	
-	private void assignmentStatement () throws SyntaxException, LexicalException {
-		match(Kind.IDENT);
-		match(Kind.ASSIGN);
-		expression();
-	}
-	
 	private void loopStatement () throws SyntaxException, LexicalException {
-		//IDENT ASSIGN STAR ConstXYSelector COLON (Expression | ϵ ) COLON  Expression
-		match(Kind.IDENT);
-		match(Kind.ASSIGN);
 		match(Kind.STAR);
 		constXYSelector();
 		match(Kind.COLON);
 		
 		if (t.kind() == Kind.PLUS || t.kind() == Kind.MINUS || t.kind() == Kind.EXCL || t.kind() == Kind.INTLIT
 				|| t.kind() == Kind.STRINGLIT || t.kind() == Kind.KW_X || t.kind() == Kind.KW_Y || t.kind() == Kind.CONST
-				|| t.kind() == Kind.LPIXEL || t.kind() == Kind.AT) {
+				|| t.kind() == Kind.LPIXEL || t.kind() == Kind.AT || t.kind() == Kind.LPAREN || t.kind() == Kind.IDENT) {
 			expression();
 		}
 		
 		match(Kind.COLON);
 		expression();
+	}
+	
+	
+	/**
+	 * 
+	 * 
+Statement  ::= AssignmentStatement | ImageOutStatement    | ImageInStatement  | LoopStatement
+ImageOutStatement ::= IDENT RARROW Expression  | IDENT RARROW KW_SCREEN  ( LSQUARE Expression COMMA Expression RSQUARE | ϵ )   
+ImageInStatement ::= IDENT LARROW Expression
+AssignmentStatement ::= IDENT ASSIGN  Expression 
+LoopStatement ∷= IDENT ASSIGN STAR ConstXYSelector COLON (Expression | ϵ ) COLON  Expression 
+Expression ::=  OrExpression  Q  Expression COLON Expression |   OrExpression    
+**/
+	private void statement () throws SyntaxException, LexicalException {
+		match(Kind.IDENT);
+		
+		if (t.kind() == Kind.RARROW) {
+			consume();
+			imageOutStatement();
+		} else if (t.kind() == Kind.LARROW) {
+			consume();
+			expression();
+		} else if (t.kind() == Kind.ASSIGN) {
+			consume();
+			if (t.kind() == Kind.STAR) {
+				loopStatement();
+			} else expression();
+		} else throw new SyntaxException(t, "Invalid statement passed to program: " + t.kind() + " passed on line: " + t.line() + ", position: " + t.posInLine());
 	}
 	
 	private void program () throws SyntaxException, LexicalException {
@@ -244,8 +239,7 @@ public class SimpleParser {
 		
 		if (t.kind() == Kind.LSQUARE) {
 			pixelSelector();
-		}
-			
+		}	
 	}
 	
 	public void hashExpression () throws SyntaxException, LexicalException {
