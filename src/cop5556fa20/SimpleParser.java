@@ -71,24 +71,11 @@ public class SimpleParser {
 		}
 		return true;
 	}
-	
-/**
- * 
- * 
-Declaration :: =  VariableDeclaration     |    ImageDeclaration   
-VariableDeclaration  ::=  VarType IDENT  (  ASSIGN  Expression  | ϵ )
-VarType ::= KW_int | KW_string 
-ImageDeclaration ::=  KW_image  (LSQUARE Expression COMMA Expression RSQUARE | ϵ) IDENT (((LARROW  | ASSIGN ) Expression) | ϵ )    added missing ‘(‘ 10/5                                           
-Statement  ::= AssignmentStatement | ImageOutStatement    | ImageInStatement  | LoopStatement
-ImageOutStatement ::= IDENT RARROW Expression  | IDENT RARROW KW_SCREEN  ( LSQUARE Expression COMMA Expression RSQUARE | ϵ )   
-ImageInStatement ::= IDENT LARROW Expression
-AssignmentStatement ::= IDENT ASSIGN  Expression 
-LoopStatement ∷= IDENT ASSIGN STAR ConstXYSelector COLON (Expression | ϵ ) COLON  Expression 
-Expression ::=  OrExpression  Q  Expression COLON Expression |   OrExpression    
 
- * **/
-	private void declaration () {
-		
+	private void declaration () throws SyntaxException, LexicalException {
+		if (t.kind() == Kind.KW_int || t.kind() == Kind.KW_string) variableDeclaration();
+		else if (t.kind() == Kind.KW_image) imageDeclaration();
+		else throw new SyntaxException(t, "Invalid declaration: " + t.kind() + " passed on line: " + t.line() + ", position: " + t.posInLine());
 	}
 	
 	private void variableDeclaration () throws SyntaxException, LexicalException {
@@ -171,11 +158,33 @@ Expression ::=  OrExpression  Q  Expression COLON Expression |   OrExpression
 	}
 	
 	private void loopStatement () throws SyntaxException, LexicalException {
-		//TODO
+		//IDENT ASSIGN STAR ConstXYSelector COLON (Expression | ϵ ) COLON  Expression
+		match(Kind.IDENT);
+		match(Kind.ASSIGN);
+		match(Kind.STAR);
+		constXYSelector();
+		match(Kind.COLON);
+		
+		if (t.kind() == Kind.PLUS || t.kind() == Kind.MINUS || t.kind() == Kind.EXCL || t.kind() == Kind.INTLIT
+				|| t.kind() == Kind.STRINGLIT || t.kind() == Kind.KW_X || t.kind() == Kind.KW_Y || t.kind() == Kind.CONST
+				|| t.kind() == Kind.LPIXEL || t.kind() == Kind.AT) {
+			expression();
+		}
+		
+		match(Kind.COLON);
+		expression();
 	}
 	
 	private void program () throws SyntaxException, LexicalException {
-		//TODO
+		while (scanner.hasTokens()) {
+			if (t.kind() == Kind.KW_int || t.kind() == Kind.KW_string || t.kind() == Kind.KW_image) {
+				declaration();
+				match(Kind.SEMI);
+			} else if (t.kind() == Kind.IDENT) {
+				statement();
+				match(Kind.SEMI);
+			} else throw new SyntaxException(t, "Invalid input passed to program: " + t.kind() + " passed on line: " + t.line() + ", position: " + t.posInLine());
+		}
 	}
 	
 	public void constXYSelector () throws SyntaxException, LexicalException {
