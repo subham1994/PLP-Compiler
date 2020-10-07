@@ -142,17 +142,6 @@ public class SimpleParser {
 		expression();
 	}
 	
-	
-	/**
-	 * 
-	 * 
-Statement  ::= AssignmentStatement | ImageOutStatement    | ImageInStatement  | LoopStatement
-ImageOutStatement ::= IDENT RARROW Expression  | IDENT RARROW KW_SCREEN  ( LSQUARE Expression COMMA Expression RSQUARE | ϵ )   
-ImageInStatement ::= IDENT LARROW Expression
-AssignmentStatement ::= IDENT ASSIGN  Expression 
-LoopStatement ∷= IDENT ASSIGN STAR ConstXYSelector COLON (Expression | ϵ ) COLON  Expression 
-Expression ::=  OrExpression  Q  Expression COLON Expression |   OrExpression    
-**/
 	private void statement () throws SyntaxException, LexicalException {
 		match(Kind.IDENT);
 		
@@ -319,7 +308,6 @@ Expression ::=  OrExpression  Q  Expression COLON Expression |   OrExpression
 		}
 	}
 
-	//make this public for convenience testing
 	public void expression() throws SyntaxException, LexicalException {
 		orExpression();
 		

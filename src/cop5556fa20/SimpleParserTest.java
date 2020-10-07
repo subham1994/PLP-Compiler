@@ -219,5 +219,11 @@ class SimpleParserTest {
 	}
 	
 
-		
+	@Test
+	public void testMixed() throws Scanner.LexicalException, SyntaxException {
+		String input = """
+				abc =* [X,Y] : ( a - b ) : a * + b;
+				""";		
+		pass(input);
+	}
 }
