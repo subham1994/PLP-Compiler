@@ -1,0 +1,330 @@
+/**
+ * Class for  for the class project in COP5556 Programming Language Principles 
+ * at the University of Florida, Fall 2020.
+ * 
+ * This software is solely for the educational benefit of students 
+ * enrolled in the course during the Fall 2020 semester.  
+ * 
+ * This software, and any software derived from it,  may not be shared with others or posted to public web sites,
+ * either during the course or afterwards.
+ * 
+ *  @Beverly A. Sanders, 2020
+ *
+ */
+
+package cop5556fa20;
+
+import cop5556fa20.Scanner.LexicalException;
+import cop5556fa20.Scanner.Token;
+import cop5556fa20.Scanner.Kind;
+
+public class SimpleParser {
+
+	@SuppressWarnings("serial")
+	public static class SyntaxException extends Exception {
+		final Token token;
+
+		public SyntaxException(Token token, String message) {
+			super(message);
+			this.token = token;
+		}
+
+		public Token token() {
+			return token;
+		}
+
+	}
+
+
+	final Scanner scanner;
+	Token t;
+
+
+	SimpleParser(Scanner scanner) {
+		this.scanner = scanner;
+		this.t = scanner.nextToken();
+	}
+	
+	Token consume () {
+		Token token = t;
+		t = scanner.nextToken();
+		return token;
+	}
+	
+	Token match (Kind kind) throws SyntaxException {
+		if (kind == t.kind()) return consume();
+		else throw new SyntaxException(t, "token mismatch on line : " + t.line() + ", position: " + t.posInLine() + "; Expected " + kind + ", got  " + t.kind());
+	}
+
+	public void parse() throws SyntaxException, LexicalException {
+		program();
+		if (!consumedAll()) throw new SyntaxException(scanner.nextToken(), "tokens remain after parsing");
+			//If consumedAll returns false, then there is at least one
+		    //token left (the EOF token) so the call to nextToken is safe. 
+	}
+	
+
+	public boolean consumedAll() {
+		if (scanner.hasTokens()) { 
+			Token t = scanner.nextToken();
+			if (t.kind() != Scanner.Kind.EOF) return false;
+		}
+		return true;
+	}
+	
+/**
+ * 
+ * 
+Declaration :: =  VariableDeclaration     |    ImageDeclaration   
+VariableDeclaration  ::=  VarType IDENT  (  ASSIGN  Expression  | ϵ )
+VarType ::= KW_int | KW_string 
+ImageDeclaration ::=  KW_image  (LSQUARE Expression COMMA Expression RSQUARE | ϵ) IDENT (((LARROW  | ASSIGN ) Expression) | ϵ )    added missing ‘(‘ 10/5                                           
+Statement  ::= AssignmentStatement | ImageOutStatement    | ImageInStatement  | LoopStatement
+ImageOutStatement ::= IDENT RARROW Expression  | IDENT RARROW KW_SCREEN  ( LSQUARE Expression COMMA Expression RSQUARE | ϵ )   
+ImageInStatement ::= IDENT LARROW Expression
+AssignmentStatement ::= IDENT ASSIGN  Expression 
+LoopStatement ∷= IDENT ASSIGN STAR ConstXYSelector COLON (Expression | ϵ ) COLON  Expression 
+Expression ::=  OrExpression  Q  Expression COLON Expression |   OrExpression    
+
+ * **/
+	private void declaration () {
+		
+	}
+	
+	private void variableDeclaration () throws SyntaxException, LexicalException {
+		varType();
+		match(Kind.IDENT);
+		
+		if (t.kind() == Kind.ASSIGN) {
+			consume();
+			expression();
+		}
+	}
+	
+	private void varType () throws SyntaxException, LexicalException {
+		if (t.kind() == Kind.KW_int || t.kind() == Kind.KW_string) {
+			consume();
+		} else throw new SyntaxException(t, "unexpected var type " + t.kind() + " passed on line: " + t.line() + ", position: " + t.posInLine());
+	}
+	
+	private void imageDeclaration () throws SyntaxException, LexicalException {
+		match(Kind.KW_image);
+		
+		if (t.kind() == Kind.LSQUARE) {
+			consume();
+			expression();
+			match(Kind.COMMA);
+			expression();
+			match(Kind.RSQUARE);
+		}
+		
+		match(Kind.IDENT);
+		
+		if (t.kind() == Kind.LARROW || t.kind() == Kind.ASSIGN) {
+			consume();
+			expression();
+		}
+	}
+	
+	private void statement () throws SyntaxException, LexicalException {
+//		match(Kind.IDENT);
+//		
+//		if (t.kind() == Kind.RARROW) {
+//			consume();
+//			imageOutStatement();
+//		} else if (t.kind() == Kind.LARROW) {
+//			consume();
+//			imageInStatement();
+//		} else if (t.kind() == Kind.ASSIGN) {
+//			consume();
+//			
+//		}
+	}
+	
+	private void imageOutStatement () throws SyntaxException, LexicalException {
+		match(Kind.IDENT);
+		match(Kind.RARROW);
+		
+		if (t.kind() == Kind.KW_SCREEN) {
+			consume();
+			
+			if (t.kind() == Kind.LSQUARE) {
+				consume();
+				expression();
+				match(Kind.COMMA);
+				expression();
+				match(Kind.RSQUARE);
+			}
+		} else expression();
+	}
+	
+	private void imageInStatement () throws SyntaxException, LexicalException {
+		match(Kind.IDENT);
+		match(Kind.LARROW);
+		expression();
+	}
+	
+	private void assignmentStatement () throws SyntaxException, LexicalException {
+		match(Kind.IDENT);
+		match(Kind.ASSIGN);
+		expression();
+	}
+	
+	private void loopStatement () throws SyntaxException, LexicalException {
+		//TODO
+	}
+	
+	private void program () throws SyntaxException, LexicalException {
+		//TODO
+	}
+	
+	public void constXYSelector () throws SyntaxException, LexicalException {
+		match(Kind.LSQUARE);
+		match(Kind.KW_X);
+		match(Kind.COMMA);
+		match(Kind.KW_Y);
+		match(Kind.RSQUARE);
+	}
+	
+	public void argExpression () throws SyntaxException, LexicalException {
+		match(Kind.AT);
+		primary();
+	}
+	
+	public void pixelSelectorExpression () throws SyntaxException, LexicalException {
+	}
+	
+	public void pixelSelector () throws SyntaxException, LexicalException {
+		match(Kind.LSQUARE);
+		expression();
+		match(Kind.COMMA);
+		expression();
+		match(Kind.RSQUARE);
+	}
+	
+	public void pixelConstructor () throws SyntaxException, LexicalException {
+		match(Kind.LPIXEL);
+		expression();
+		match(Kind.COMMA);
+		expression();
+		match(Kind.COMMA);
+		expression();
+		match(Kind.RSQUARE);
+	}
+	
+	public void attribute () throws SyntaxException, LexicalException {
+		if (t.kind() == Kind.KW_BLUE || t.kind() == Kind.KW_GREEN || t.kind() == Kind.KW_WIDTH || t.kind() == Kind.KW_HEIGHT || t.kind() == Kind.KW_RED) consume();
+		else throw new SyntaxException(t, "unexpected token " + t.kind() + " passed on line: " + t.line() + ", position: " + t.posInLine());
+	}
+	
+	public void primary () throws SyntaxException, LexicalException {
+		if (t.kind() == Kind.INTLIT || t.kind() == Kind.IDENT || t.kind() == Kind.STRINGLIT
+				|| t.kind() == Kind.KW_X || t.kind() == Kind.KW_Y || t.kind() == Kind.CONST) {
+			consume();
+		} else if (t.kind() == Kind.LPAREN) {
+			consume();
+			expression();
+			match(Kind.RPAREN);
+		} else if (t.kind() == Kind.LPIXEL) {
+			pixelConstructor();
+		} else if (t.kind() == Kind.AT) {
+			argExpression();
+		} else {
+			throw new SyntaxException(t, "unexpected token " + t.kind() + " passed on line: " + t.line() + ", position: " + t.posInLine());
+		}
+		
+		if (t.kind() == Kind.LSQUARE) {
+			pixelSelector();
+		}
+			
+	}
+	
+	public void hashExpression () throws SyntaxException, LexicalException {
+		primary();
+		
+		while (t.kind() == Kind.HASH) {
+			consume();
+			attribute();
+		}
+	}
+	
+	public void unaryExpressionNotPlusMinus () throws SyntaxException, LexicalException {
+		if (t.kind() == Kind.EXCL)  {
+			consume();
+			unaryExpression();
+		} else hashExpression();
+	}
+	
+	public void unaryExpression () throws SyntaxException, LexicalException {
+		if (t.kind() == Kind.PLUS || t.kind() == Kind.MINUS)  {
+			consume();
+			unaryExpression();
+		} else unaryExpressionNotPlusMinus();
+	}
+	
+	public void multExpression () throws SyntaxException, LexicalException {
+		unaryExpression();
+		
+		while (t.kind() == Kind.STAR || t.kind() == Kind.DIV || t.kind() == Kind.MOD) {
+			consume();
+			unaryExpression();
+		}
+	}
+	
+	public void addExpression () throws SyntaxException, LexicalException {
+		multExpression();
+		
+		while (t.kind() == Kind.PLUS || t.kind() == Kind.MINUS)  {
+			consume();
+			multExpression();
+		}
+	}
+	
+	public void relExpression () throws SyntaxException, LexicalException {
+		addExpression();
+		
+		while (t.kind() == Kind.LT || t.kind() == Kind.GT || t.kind() == Kind.LE || t.kind() == Kind.GE) {
+			consume();
+			addExpression();
+		}
+	}
+	
+	public void eqExpression () throws SyntaxException, LexicalException {
+		relExpression();
+		
+		while (t.kind() == Kind.EQ || t.kind() == Kind.NEQ) {
+			consume();
+			relExpression();
+		}
+	}
+	
+	public void andExpression () throws SyntaxException, LexicalException {
+		eqExpression();
+		
+		while (t.kind() == Kind.AND) {
+			consume();
+			eqExpression();
+		}
+	}
+	
+	public void orExpression () throws SyntaxException, LexicalException {
+		andExpression();
+		
+		while (t.kind() == Kind.OR) {
+			consume();
+			andExpression();
+		}
+	}
+
+	//make this public for convenience testing
+	public void expression() throws SyntaxException, LexicalException {
+		orExpression();
+		
+		if (t.kind() == Kind.Q) {
+			consume();
+			expression();
+			match(Kind.COLON);
+			expression();
+		}
+	}
+}
