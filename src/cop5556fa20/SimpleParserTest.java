@@ -27,7 +27,6 @@ import static cop5556fa20.Scanner.Kind.*;
  * @author Beverly Sanders
  *
  */
-@SuppressWarnings("preview") //text blocks are preview features in Java 14
 
 class SimpleParserTest {
 	
@@ -49,7 +48,7 @@ class SimpleParserTest {
 		return parser;
 	}
 	
-	/*
+	/**
 	 * Parses the given input and expects a normal return from parse.
 	 */
 	void pass(String input) throws SyntaxException, LexicalException {
@@ -58,7 +57,7 @@ class SimpleParserTest {
 		assertTrue(p.consumedAll());
 	}
 	
-	/*
+	/**
 	 * Parses the given input using the fragment of the grammar
 	 * that uses Expression as the start symbol.  This is for convenience in
 	 * testing--it allows expressions to be written and tested directly without
@@ -108,7 +107,6 @@ class SimpleParserTest {
 	 * token kind that manifests the error is not given or checked.
 	 * 
 	 * @param input
-	 * @param kind
 	 */
 	void fail(String input)  {
 		Exception exception = assertThrows(SyntaxException.class, () -> {
@@ -224,6 +222,22 @@ class SimpleParserTest {
 		String input = """
 				abc =* [X,Y] : ( a - b ) : a * + b;
 				""";		
+		pass(input);
+	}
+	
+	@Test
+	public void testfailA() throws Scanner.LexicalException, SyntaxException {
+		String input = """
+				<<r,g,b>>\n
+				""";		
+		passExpression(input);
+	}
+	
+	@Test
+	public void testfailB() throws Scanner.LexicalException, SyntaxException {
+		String input = """
+				image[1000,2000]  im= im2;
+				""";
 		pass(input);
 	}
 }

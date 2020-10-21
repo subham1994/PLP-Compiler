@@ -55,7 +55,7 @@ public class Scanner {
 		EXCL/* ! */, Q/* ? */, COLON/* : */, EQ/* == */, NEQ/* != */, GE/* >= */, LE/* <= */, 
 		AND/* & */, OR/* | */, PLUS/* + */, MINUS/* - */, STAR/* * */, DIV/* / */, MOD/* % */, 
 	    AT/* @ */, HASH /* # */, RARROW/* -> */, LARROW/* <- */, LPAREN/* ( */, RPAREN/* ) */, 
-		LSQUARE/* [ */, RSQUARE/* ] */, LPIXEL /* << */, RPIXEL /* >> */,  SEMI/* ; */, COMMA/* , */,  EOF
+		LSQUARE/* [ */, RSQUARE/* ] */, LPIXEL /* << */, RPIXEL /* >> */,  SEMI/* ; */, COMMA/* , */,  EOF, NOP
 	}
 	
 	
@@ -118,7 +118,10 @@ public class Scanner {
 		
 		return "";
 	}
-	
+
+	protected String getTokenText(Token token) {
+		return String.valueOf(Arrays.copyOfRange(chars, token.pos, token.pos + token.length));
+	}
 	
 	/**
 	 * Returns true if the internal interator has more Tokens
@@ -633,7 +636,7 @@ public class Scanner {
 	 * Hashmap containing the values of the predefined colors.
 	 * 
 	 */
-	private static HashMap<String, Integer> constants;
+	public static HashMap<String, Integer> constants;
 	static {
 		constants = new HashMap<String, Integer>();	
 		constants.put("Z", 255);

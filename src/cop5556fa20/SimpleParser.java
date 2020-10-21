@@ -53,21 +53,22 @@ public class SimpleParser {
 	
 	Token match (Kind kind) throws SyntaxException {
 		if (kind == t.kind()) return consume();
-		else throw new SyntaxException(t, "token mismatch on line : " + t.line() + ", position: " + t.posInLine() + "; Expected " + kind + ", got  " + t.kind());
+		else throw new SyntaxException(t, "token mismatch on line : " + t.line() + ", position: " + t.posInLine() + "; Expected " + kind + ", got " + t.kind());
 	}
 
 	public void parse() throws SyntaxException, LexicalException {
 		program();
+
+		// If consumedAll returns false, then there is at least one
+		// token left (the EOF token) so the call to nextToken is safe.
 		if (!consumedAll()) throw new SyntaxException(scanner.nextToken(), "tokens remain after parsing");
-			//If consumedAll returns false, then there is at least one
-		    //token left (the EOF token) so the call to nextToken is safe. 
 	}
 	
 
 	public boolean consumedAll() {
 		if (scanner.hasTokens()) { 
 			Token t = scanner.nextToken();
-			if (t.kind() != Scanner.Kind.EOF) return false;
+			return t.kind() == Kind.EOF;
 		}
 		return true;
 	}
@@ -183,10 +184,7 @@ public class SimpleParser {
 		match(Kind.AT);
 		primary();
 	}
-	
-	public void pixelSelectorExpression () throws SyntaxException, LexicalException {
-	}
-	
+
 	public void pixelSelector () throws SyntaxException, LexicalException {
 		match(Kind.LSQUARE);
 		expression();
@@ -202,7 +200,7 @@ public class SimpleParser {
 		expression();
 		match(Kind.COMMA);
 		expression();
-		match(Kind.RSQUARE);
+		match(Kind.RPIXEL);
 	}
 	
 	public void attribute () throws SyntaxException, LexicalException {
@@ -233,7 +231,7 @@ public class SimpleParser {
 	
 	public void hashExpression () throws SyntaxException, LexicalException {
 		primary();
-		
+
 		while (t.kind() == Kind.HASH) {
 			consume();
 			attribute();
