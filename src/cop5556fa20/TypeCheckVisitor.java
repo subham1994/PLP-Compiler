@@ -82,6 +82,8 @@ public class TypeCheckVisitor implements ASTVisitor {
 
 	@Override
 	public Object visitExprArg (ExprArg exprArg, Object arg) throws Exception {
+		if (arg == null) throw new TypeException(exprArg.first(), "Arg variable cannot be a conditional parameter");
+
 		Type tE = (Type) exprArg.e().visit(this, arg);
 		Type tRet = (Type) arg;
 
@@ -120,7 +122,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 
 	@Override
 	public Object visitExprConditional (ExprConditional exprConditional, Object arg) throws Exception {
-		Type tC = (Type) exprConditional.condition().visit(this, arg);
+		Type tC = (Type) exprConditional.condition().visit(this, null);
 		Type tT = (Type) exprConditional.trueCase().visit(this, arg);
 		Type tF = (Type) exprConditional.falseCase().visit(this, arg);
 

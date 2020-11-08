@@ -203,9 +203,27 @@ class TypeCheckTest {
 	}
 
 	@Test
-	public void testExprConditionalfail () throws Exception {
+	public void testExprCondExprFailA () throws Exception {
 		String input = """
 				int d = (3 + 4) ? 0 : 1;
+				""";
+		fail(input);
+	}
+
+	@Test
+	public void testCondExprFailB () throws Exception {
+		String input = """
+       			int x = @0 == @1 ? 0 : 1;
+       			x -> screen;
+				""";
+		fail(input);
+	}
+
+	@Test
+	public void testCondExprFailC () throws Exception {
+		String input = """
+       			int x = 1 == (@0 + @1) ? 0 : 1;
+       			x -> screen;
 				""";
 		fail(input);
 	}
