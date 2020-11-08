@@ -84,7 +84,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 	public Object visitExprArg (ExprArg exprArg, Object arg) throws Exception {
 		if (arg == null) throw new TypeException(exprArg.first(), "Arg variable cannot be a conditional parameter");
 
-		Type tE = (Type) exprArg.e().visit(this, arg);
+		Type tE = (Type) exprArg.e().visit(this, Type.Int);
 		Type tRet = (Type) arg;
 
 		if (tE != Type.Int)
