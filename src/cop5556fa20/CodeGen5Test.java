@@ -137,16 +137,19 @@ class CodeGen5Test {
 		String input = """
 				string s;
 				s = @0;
+				int i = @1;
 				s -> screen;
+				i -> screen;
 				""";
 				
 		byte[] bytecode = genCode(input, className, false);
-		String[] args =  {"Hello from the command line!"};
+		String[] args =  {"Hello from the command line!", "2"};
 		runCode(className, bytecode, args);
 		//set up expected log
 		ArrayList<Object> expectedLog = new ArrayList<Object>();
 		expectedLog.add(args[0]);
-		assertEquals(expectedLog, LoggedIO.globalLog);		
+		expectedLog.add(Integer.parseInt(args[1]));
+		assertEquals(expectedLog, LoggedIO.globalLog);
 	}
 
 
@@ -210,6 +213,23 @@ class CodeGen5Test {
 		ArrayList<Object> expectedLog = new ArrayList<Object>();
 		expectedLog.add(-36);
 		expectedLog.add("Subham Gaurav");
+		assertEquals(expectedLog, LoggedIO.globalLog);
+	}
+
+	@Test
+	public void testBoolean() throws Exception {
+		String className = "HelloWorld";
+		String input = """
+				int i = !(2 > 3) & (5 < 6) & ("subam" == "gaurav" | "equal" == "equal") ? 10 : 20;
+				i -> screen;
+				""";
+
+		byte[] bytecode = genCode(input, className, false);
+		String[] args = {};
+		runCode(className, bytecode, args);
+		//set up expected log
+		ArrayList<Object> expectedLog = new ArrayList<Object>();
+		expectedLog.add(10);
 		assertEquals(expectedLog, LoggedIO.globalLog);
 	}
 }

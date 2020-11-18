@@ -52,10 +52,15 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 		Type type = decVar.type();
 		String desc;
 
-		if (type == Type.String) desc = "Ljava/lang/String;";
-		else desc = "I";
+		FieldVisitor fieldVisitor;
+		if (type == Type.String) {
+			desc = "Ljava/lang/String;";
+			fieldVisitor = cw.visitField(ACC_STATIC, varName, desc, null, null);
+		} else {
+			desc = "I";
+			fieldVisitor = cw.visitField(ACC_STATIC, varName, desc, null, 0);
+		}
 
-		FieldVisitor fieldVisitor = cw.visitField(ACC_STATIC, varName, desc, null, null);
 		fieldVisitor.visitEnd();
 
 		//evaluate initial value and store in variable, if one is given.
@@ -73,6 +78,11 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 		mv.visitVarInsn(ALOAD, 0);
 		exprArg.e().visit(this, arg);
 		mv.visitInsn(AALOAD);
+
+		if (exprArg.type() == Type.Int) {
+			mv.visitMethodInsn(INVOKESTATIC, "java/lang/Integer","parseInt","(Ljava/lang/String;)I",false);
+		}
+
 		return null;
 	}
 
@@ -85,8 +95,8 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 				entry(Scanner.Kind.MINUS, ISUB),
 				entry(Scanner.Kind.AND, IAND),
 				entry(Scanner.Kind.OR, IOR),
-				entry(Scanner.Kind.EQ, IF_ICMPEQ),
-				entry(Scanner.Kind.NEQ, IF_ICMPNE),
+				entry(Scanner.Kind.EQ, exprBinary.type() == Type.Int ? IF_ICMPEQ : IF_ACMPEQ),
+				entry(Scanner.Kind.NEQ, exprBinary.type() == Type.Int ? IF_ICMPNE : IF_ACMPNE),
 				entry(Scanner.Kind.LT, IF_ICMPLT),
 				entry(Scanner.Kind.GT, IF_ICMPGT),
 				entry(Scanner.Kind.GE, IF_ICMPGE),
