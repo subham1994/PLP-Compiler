@@ -116,13 +116,12 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 					mv.visitTypeInsn(NEW, descSB);
 					mv.visitInsn(DUP);
 					mv.visitMethodInsn(INVOKESPECIAL, descSB,"<init>","()V",false);
-					exprBinary.e0().visit(this, arg);
 
+					exprBinary.e0().visit(this, arg);
 					mv.visitMethodInsn(INVOKEVIRTUAL, descSB,"append", "(L" + descS + ";)L" + descSB + ";",false);
+
 					exprBinary.e1().visit(this, arg);
 					mv.visitMethodInsn(INVOKEVIRTUAL, descSB,"append", "(L" + descS + ";)L" + descSB + ";",false);
-
-
 
 					mv.visitMethodInsn(INVOKEVIRTUAL, descSB, "toString","()L" + descS + ";",false);
 				}

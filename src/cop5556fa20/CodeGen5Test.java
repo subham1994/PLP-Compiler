@@ -136,19 +136,19 @@ class CodeGen5Test {
 		String className = "CommandLineArg0";
 		String input = """
 				string s;
-				s = @0;
-				int i = @1;
+				s = @@@0;
+				int i = @3;
 				s -> screen;
 				i -> screen;
 				""";
 				
 		byte[] bytecode = genCode(input, className, false);
-		String[] args =  {"Hello from the command line!", "2"};
+		String[] args =  {"1", "2", "Hello from the command line!", "2"};
 		runCode(className, bytecode, args);
 		//set up expected log
 		ArrayList<Object> expectedLog = new ArrayList<Object>();
-		expectedLog.add(args[0]);
-		expectedLog.add(Integer.parseInt(args[1]));
+		expectedLog.add(args[2]);
+		expectedLog.add(Integer.parseInt(args[3]));
 		assertEquals(expectedLog, LoggedIO.globalLog);
 	}
 
@@ -220,7 +220,7 @@ class CodeGen5Test {
 	public void testBoolean() throws Exception {
 		String className = "HelloWorld";
 		String input = """
-				int i = !(2 > 3) & (5 < 6) & ("subam" == "gaurav" | "equal" == "equal") ? 10 : 20;
+				int i = !(2 > 3) & (5 < 6) & ("subam" != "gaurav" | "equal" == "equal") ? 10 : 20;
 				i -> screen;
 				""";
 
