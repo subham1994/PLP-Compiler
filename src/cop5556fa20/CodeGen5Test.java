@@ -232,4 +232,22 @@ class CodeGen5Test {
 		expectedLog.add(10);
 		assertEquals(expectedLog, LoggedIO.globalLog);
 	}
+
+	@Test
+	public void testFailedA() throws Exception {
+		String className = "HelloWorld";
+		String input = """
+    			string a = "a";
+    			string s = "a" != a ? "true" : "false";
+    			s -> screen;
+				""";
+
+		byte[] bytecode = genCode(input, className, false);
+		String[] args = {};
+		runCode(className, bytecode, args);
+		//set up expected log
+		ArrayList<Object> expectedLog = new ArrayList<Object>();
+		expectedLog.add("false");
+		assertEquals(expectedLog, LoggedIO.globalLog);
+	}
 }
