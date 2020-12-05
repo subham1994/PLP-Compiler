@@ -55,7 +55,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 		if (tEH != Type.Int && tEH != Type.Void || tEH != tEW)
 			throw new TypeException(decImage.first(), "Type mismatch for width/height in Image declaration");
 
-		if (decImage.op() == Kind.LARROW && tES != Type.String)
+		if (decImage.op() == Kind.LARROW && tES != Type.String && tES != Type.Image)
 			throw new TypeException(decImage.first(), "Type mismatch; Expected String, got " + tES.toString());
 		else if (decImage.op() == Kind.ASSIGN && tES != Type.Image)
 			throw new TypeException(decImage.first(), "Type mismatch; Expected Image, got " + tES.toString());

@@ -169,6 +169,7 @@ class TypeCheckTest {
 				image im_b = im_a;
 				image im_c <- @1;
 				image im_d <- @1 + url;
+				image im_f <- im_a;
 				image im;
 				""";
 		pass(input);

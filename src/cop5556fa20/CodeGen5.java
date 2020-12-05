@@ -16,12 +16,17 @@ package cop5556fa20;
 
 import cop5556fa20.AST.Type;
 import cop5556fa20.AST.*;
+import cop5556fa20.runtime.BufferedImageUtils;
 import cop5556fa20.runtime.LoggedIO;
+import cop5556fa20.runtime.PLPImage;
+import cop5556fa20.runtime.PixelOps;
 import org.objectweb.asm.*;
+import org.objectweb.asm.Label;
 
 import java.util.List;
 import java.util.Map;
 
+import static cop5556fa20.runtime.BufferedImageUtils.BufferedImageDesc;
 import static java.util.Map.entry;
 
 public class CodeGen5 implements ASTVisitor, Opcodes {
@@ -35,12 +40,88 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 		super();
 		this.className = className;
 	}
+
+	public void resizeImage (DecImage decImage, Object arg) throws Exception {
+		String resizeImageDesc = "(" + BufferedImageDesc + "II)" + BufferedImageDesc;
+		decImage.width().visit(this, arg);
+		decImage.height().visit(this, arg);
+		mv.visitMethodInsn(INVOKESTATIC, BufferedImageUtils.className,"resizeBufferedImage",
+				resizeImageDesc,false);
+	}
+
+	public void loadDimensionOnStack(DecImage decImage, Object arg) throws Exception {
+		if (decImage.width() != Expression.empty) {
+			String desc = "java/awt/Dimension";
+			mv.visitTypeInsn(NEW, desc);
+			mv.visitInsn(DUP);
+			decImage.width().visit(this, arg);
+			decImage.height().visit(this, arg);
+			mv.visitMethodInsn(INVOKESPECIAL, desc,"<init>","(II)V",false);
+		} else {
+			mv.visitInsn(ACONST_NULL);
+		}
+	}
+
+	public void loadBufferedImageOnStack(DecImage decImage, Object arg) throws Exception {
+		loadDimensionOnStack(decImage, arg);
+		mv.visitLdcInsn(decImage.first().line());
+		mv.visitLdcInsn(decImage.first().posInLine());
+		mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"getImgIfDimensionsMatch",
+				"(Ljava/awt/Dimension;II)" + BufferedImageDesc,false);
+	}
 	
 	
 	@Override
-	public Object visitDecImage(DecImage decImage, Object arg) throws Exception {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("not yet implemented");
+	public Object visitDecImage (DecImage decImage, Object arg) throws Exception {
+		String varName = decImage.name();
+		String desc = PLPImage.desc;
+		String descDim = "Ljava/awt/Dimension;";
+
+		FieldVisitor fieldVisitor = cw.visitField(ACC_STATIC, varName, desc, null, null);
+		fieldVisitor.visitEnd();
+
+		// Load PLPImage Object on the stack and clone it
+		mv.visitTypeInsn(NEW, PLPImage.className);
+		mv.visitInsn(DUP);
+
+		if (decImage.source() != Expression.empty) {
+			// Load the RHS value on stack (String/PLPImage)
+			decImage.source().visit(this, arg);
+
+			switch (decImage.source().type()) {
+				case String -> {
+					// Fetch BufferedImage, resize it if needed and leave the BufferedImage on top of stack
+					mv.visitMethodInsn(INVOKESTATIC, BufferedImageUtils.className,"fetchBufferedImage",
+							"(Ljava/lang/String;)" + BufferedImageDesc,false);
+
+					if (decImage.width() != Expression.empty) resizeImage(decImage, arg);
+				}
+				case Image -> {
+					if (decImage.op() == Scanner.Kind.LARROW) {
+						// Copy BufferedImage, resize it if needed and leave the BufferedImage on top of stack
+						mv.visitMethodInsn(INVOKESTATIC, BufferedImageUtils.className,"copyBufferedImage",
+								"(" + BufferedImageDesc + ")" + BufferedImageDesc,false);
+
+						if (decImage.width() != Expression.empty) resizeImage(decImage, arg);
+					} else if (decImage.op() == Scanner.Kind.ASSIGN) {
+						// Consume the RHS PLPImage object to fetch the RHS BufferedImage to the top of stack
+						if (decImage.width() != Expression.empty) loadBufferedImageOnStack(decImage, arg);
+						else mv.visitFieldInsn(GETFIELD, PLPImage.className, "image", BufferedImageDesc);
+					}
+				}
+				default -> {
+					throw new UnsupportedOperationException("not yet implemented");
+				}
+			}
+		} else {
+			mv.visitInsn(ACONST_NULL);
+		}
+
+		loadDimensionOnStack(decImage, arg);
+		mv.visitMethodInsn(INVOKESPECIAL, PLPImage.className,"<init>",
+				"(" + BufferedImageDesc + descDim + ")V",false);
+		mv.visitFieldInsn(PUTSTATIC, className, decImage.name(), desc);
+		return null;
 	}
 	
 	/**
@@ -176,8 +257,24 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitExprHash(ExprHash exprHash, Object arg) throws Exception {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("not yet implemented");
+		exprHash.e().visit(this, arg);
+
+		switch (exprHash.attr()) {
+			case "red" ->
+				mv.visitMethodInsn(INVOKESTATIC, PixelOps.className, "getRed", PixelOps.getRedSig, isInterface);
+			case "green" ->
+				mv.visitMethodInsn(INVOKESTATIC, PixelOps.className, "getGreen", PixelOps.getGreenSig, isInterface);
+			case "blue" ->
+				mv.visitMethodInsn(INVOKESTATIC, PixelOps.className, "getBlue", PixelOps.getBlueSig, isInterface);
+			default -> {
+				mv.visitLdcInsn(exprHash.attr());
+				mv.visitLdcInsn(exprHash.first().line());
+				mv.visitLdcInsn(exprHash.first().posInLine());
+				mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className, "dimIfImageNotNull", "(Ljava/lang/String;II)I", isInterface);
+			}
+		}
+
+		return null;
 	}
 
 	@Override
@@ -188,14 +285,20 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitExprPixelConstructor(ExprPixelConstructor exprPixelConstructor, Object arg) throws Exception {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("not yet implemented");
+		exprPixelConstructor.redExpr().visit(this, arg);
+		exprPixelConstructor.greenExpr().visit(this, arg);
+		exprPixelConstructor.blueExpr().visit(this, arg);
+		mv.visitMethodInsn(INVOKESTATIC, PixelOps.className, "makePixel", PixelOps.makePixelSig, isInterface);
+		return null;
 	}
 
 	@Override
 	public Object visitExprPixelSelector(ExprPixelSelector exprPixelSelector, Object arg) throws Exception {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("not yet implemented");
+		exprPixelSelector.image().visit(this, arg);
+		exprPixelSelector.X().visit(this, arg);
+		exprPixelSelector.Y().visit(this, arg);
+		mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className, "selectPixel", PLPImage.selectPixelSig, isInterface);
+		return null;
 	}
 	
 	/**
@@ -237,7 +340,12 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitExprVar(ExprVar exprVar, Object arg) throws Exception {
-		String desc = exprVar.type() == Type.Int ? "I" : "Ljava/lang/String;";
+		// TODO: How to implement X and Y variables??
+		String desc;
+		if (exprVar.type() == Type.Int) desc = "I";
+		else if (exprVar.type() == Type.String) desc = "Ljava/lang/String;";
+		else desc = PLPImage.desc;
+
 		mv.visitFieldInsn(GETSTATIC, className, exprVar.name(), desc);
 		return null;
 	}
@@ -299,16 +407,67 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitStatementAssign(StatementAssign statementAssign, Object arg) throws Exception {
-		String desc = statementAssign.dec().type() == Type.Int ? "I" : "Ljava/lang/String;";
+		String desc = PLPImage.desc;
+		Type type = statementAssign.dec().type();
+
+		if (type == Type.Image) {
+			// Preload the LHS PLPImage Instance on to the stack and clone it to be consumed by PUTSTATIC in the end
+			mv.visitFieldInsn(GETSTATIC, className, statementAssign.name(), desc);
+			mv.visitInsn(DUP);
+		}
+
+		// Load RHS value Instance on to the stack
 		statementAssign.expression().visit(this, arg);
+
+		if (type == Type.Int) desc = "I";
+		else if (type == Type.String) desc = "Ljava/lang/String;";
+		else {
+			DecImage decImage = (DecImage) statementAssign.dec();
+
+			// clone the top of stack to call the method on PLPImage object to check if the image is not null
+			mv.visitInsn(DUP);
+			mv.visitLdcInsn(statementAssign.first().line());
+			mv.visitLdcInsn(statementAssign.first().posInLine());
+			mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"assertImageIsNotNull", "(II)V",false);
+
+			// load the BufferedImage on top of the stack with the help of RHS instance on the stack
+			if (decImage.width() != Expression.empty) loadBufferedImageOnStack(decImage, arg);
+			else mv.visitFieldInsn(GETFIELD, PLPImage.className, "image", BufferedImageDesc);
+
+			// set the reference of the image field of the LHS to that of the RHS, consuming one instance of the LHS
+			mv.visitFieldInsn(PUTFIELD, PLPImage.className, "image", BufferedImageDesc);
+		}
+
 		mv.visitFieldInsn(PUTSTATIC, className, statementAssign.name(), desc);
 		return null;
 	}
 
 	@Override
 	public Object visitStatementImageIn(StatementImageIn statementImageIn, Object arg) throws Exception {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("not yet implemented");
+		String desc = PLPImage.desc;
+		DecImage decImage = (DecImage) statementImageIn.dec();
+
+		// Preload the LHS PLPImage Instance on to the stack and clone it to be consumed by PUTSTATIC in the end
+		mv.visitFieldInsn(GETSTATIC, className, statementImageIn.name(), desc);
+		mv.visitInsn(DUP);
+
+		// Load the RHS value Instance on to the stack (String/Image)
+		statementImageIn.source().visit(this, arg);
+
+		if (statementImageIn.source().type() == Type.String)
+			mv.visitMethodInsn(INVOKESTATIC, BufferedImageUtils.className,"fetchBufferedImage",
+					"(Ljava/lang/String;)" + BufferedImageDesc,false);
+		else if (statementImageIn.source().type() == Type.Image)
+			mv.visitFieldInsn(GETFIELD, PLPImage.className, "image", BufferedImageDesc);
+			mv.visitMethodInsn(INVOKESTATIC, BufferedImageUtils.className,"copyBufferedImage",
+					"(" + BufferedImageDesc + ")" + BufferedImageDesc,false);
+
+		if (decImage.width() != Expression.empty) resizeImage(decImage, arg);
+
+		// set the reference of the image field of the LHS to that of the RHS, consuming one instance of the LHS
+		mv.visitFieldInsn(PUTFIELD, PLPImage.className, "image", BufferedImageDesc);
+		mv.visitFieldInsn(PUTSTATIC, className, statementImageIn.name(), desc);
+		return null;
 	}
 
 	@Override
@@ -325,8 +484,12 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitStatementOutFile(StatementOutFile statementOutFile, Object arg) throws Exception {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("not yet implemented");
+		String name = statementOutFile.name();
+		mv.visitFieldInsn(GETSTATIC, className, name, PLPImage.desc);
+		statementOutFile.filename().visit(this, arg);
+		mv.visitMethodInsn(INVOKESTATIC, LoggedIO.className, "imageToFile", LoggedIO.imageToFileSig,
+				isInterface);
+		return null;
 	}
 
 	@Override
@@ -347,6 +510,14 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 				desc = "I";
 				mv.visitFieldInsn(GETSTATIC, className, name, desc);
 				mv.visitMethodInsn(INVOKESTATIC, LoggedIO.className, "intToScreen", LoggedIO.intToScreenSig,
+						isInterface);
+			}
+			case Image -> {
+				mv.visitFieldInsn(GETSTATIC, className, name, PLPImage.desc);
+				// TODO: How to load X and Y on the stack?
+				mv.visitLdcInsn(0);
+				mv.visitLdcInsn(0);
+				mv.visitMethodInsn(INVOKESTATIC, LoggedIO.className, "imageToScreen", LoggedIO.imageToScreenSig,
 						isInterface);
 			}
 			default -> {
