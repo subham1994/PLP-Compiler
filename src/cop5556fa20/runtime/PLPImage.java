@@ -113,11 +113,6 @@ public class PLPImage {
 		if (image == null) throw new PLPImageException(line, posInLine, "Image not initialized");
 	}
 
-	public int dimIfImageNotNull (String whichDim, int line, int posInLine) throws PLPImageException {
-		assertImageIsNotNull(line, posInLine);
-		return whichDim.equals("width") ? getWidthThrows(line, posInLine) : getHeightThrows(line, posInLine);
-	}
-
 	public static final String selectPixelSig = "(II)I";
 	public int selectPixel(int x, int y) {
 		return image.getRGB(x, y);

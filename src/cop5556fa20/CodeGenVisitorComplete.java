@@ -29,14 +29,14 @@ import java.util.Map;
 import static cop5556fa20.runtime.BufferedImageUtils.BufferedImageDesc;
 import static java.util.Map.entry;
 
-public class CodeGen5 implements ASTVisitor, Opcodes {
+public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 	
 	final String className;
 	final boolean isInterface = false;
 	ClassWriter cw;
 	MethodVisitor mv;
 	
-	public CodeGen5(String className) {
+	public CodeGenVisitorComplete(String className) {
 		super();
 		this.className = className;
 	}
@@ -267,10 +267,10 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 			case "blue" ->
 				mv.visitMethodInsn(INVOKESTATIC, PixelOps.className, "getBlue", PixelOps.getBlueSig, isInterface);
 			default -> {
-				mv.visitLdcInsn(exprHash.attr());
+				String methodName = exprHash.attr().equals("width") ? "getWidthThrows" : "getHeightThrows";
 				mv.visitLdcInsn(exprHash.first().line());
 				mv.visitLdcInsn(exprHash.first().posInLine());
-				mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className, "dimIfImageNotNull", "(Ljava/lang/String;II)I", isInterface);
+				mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className, methodName, "(II)I", isInterface);
 			}
 		}
 
@@ -340,13 +340,14 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitExprVar(ExprVar exprVar, Object arg) throws Exception {
-		// TODO: How to implement X and Y variables??
 		String desc;
 		if (exprVar.type() == Type.Int) desc = "I";
 		else if (exprVar.type() == Type.String) desc = "Ljava/lang/String;";
 		else desc = PLPImage.desc;
 
-		mv.visitFieldInsn(GETSTATIC, className, exprVar.name(), desc);
+		if (exprVar.name().equals("X")) mv.visitVarInsn(ILOAD, 1);
+		else if (exprVar.name().equals("Y")) mv.visitVarInsn(ILOAD, 2);
+		else mv.visitFieldInsn(GETSTATIC, className, exprVar.name(), desc);
 		return null;
 	}
 
@@ -385,6 +386,10 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 		mv.visitLabel(mainEnd);
 		// handles parameters and local variables of main. The only local var is args
 		mv.visitLocalVariable("args", "[Ljava/lang/String;", null, mainStart, mainEnd, 0);
+		mv.visitLocalVariable("X", "I", null, mainStart, mainEnd, 1);
+		mv.visitLocalVariable("Y", "I", null, mainStart, mainEnd, 2);
+		mv.visitLocalVariable("width", "I", null, mainStart, mainEnd, 3);
+		mv.visitLocalVariable("height", "I", null, mainStart, mainEnd, 4);
 		// Sets max stack size and number of local vars.
 		// Because we use ClassWriter.COMPUTE_FRAMES as a parameter in the constructor,
 		// asm will calculate this itself and the parameters are ignored.
@@ -472,8 +477,76 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 
 	@Override
 	public Object visitStatementLoop(StatementLoop statementLoop, Object arg) throws Exception {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("not yet implemented");
+		mv.visitFieldInsn(GETSTATIC, className, statementLoop.name(), PLPImage.desc);
+		mv.visitInsn(DUP);
+		mv.visitInsn(DUP);
+
+		// Make sure the image has been initialized with a dimension and throw a PLPImageException
+		// if that is not the case. Otherwise, store those dimesions in local vars width and height.
+		mv.visitLdcInsn(statementLoop.first().line());
+		mv.visitLdcInsn(statementLoop.first().posInLine());
+		mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"ensureImageAllocated", "(II)V",false);
+
+		mv.visitLdcInsn(statementLoop.first().line());
+		mv.visitLdcInsn(statementLoop.first().posInLine());
+		mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"getWidthThrows", "(II)I",false);
+		mv.visitVarInsn(ISTORE, 3);
+
+		mv.visitLdcInsn(statementLoop.first().line());
+		mv.visitLdcInsn(statementLoop.first().posInLine());
+		mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"getHeightThrows", "(II)I",false);
+		mv.visitVarInsn(ISTORE, 4);
+
+
+		// start the loop
+		Label lOuter = new Label(); // outer loop label
+		Label lInner = new Label(); // inner loop label
+		Label lIncrementInnerIndex = new Label();
+		Label lIncrementOuterIndex = new Label();
+		Label lEndLoop = new Label(); // end loop
+
+		// Init local variable X with 0 and start the outer loop
+		mv.visitInsn(ICONST_0);
+		mv.visitVarInsn(ISTORE, 1);
+		mv.visitLabel(lOuter);
+
+		// check if X is less than width
+		mv.visitVarInsn(ILOAD, 1);
+		mv.visitVarInsn(ILOAD, 3);
+		mv.visitJumpInsn(IF_ICMPGE, lEndLoop);
+
+		// Init local variable Y with 0 and start the inner loop
+		mv.visitInsn(ICONST_0);
+		mv.visitVarInsn(ISTORE, 2);
+		mv.visitLabel(lInner);
+
+		// check if Y is less than height
+		mv.visitVarInsn(ILOAD, 2);
+		mv.visitVarInsn(ILOAD, 4);
+		mv.visitJumpInsn(IF_ICMPGE, lIncrementOuterIndex);
+
+		// Inner loop body
+		if (statementLoop.cond() != Expression.empty) {
+			statementLoop.cond().visit(this, arg);
+			mv.visitJumpInsn(IFEQ, lIncrementInnerIndex);
+		}
+
+		mv.visitFieldInsn(GETSTATIC, className, statementLoop.name(), PLPImage.desc);
+		mv.visitVarInsn(ILOAD, 1);
+		mv.visitVarInsn(ILOAD, 2);
+		statementLoop.e().visit(this, arg);
+		mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"updatePixel", PLPImage.updatePixelSig,false);
+
+		mv.visitLabel(lIncrementInnerIndex);
+		mv.visitIincInsn(2, 1);
+		mv.visitJumpInsn(GOTO, lInner);
+
+		mv.visitLabel(lIncrementOuterIndex);
+		mv.visitIincInsn(1, 1);
+		mv.visitJumpInsn(GOTO, lOuter);
+		mv.visitLabel(lEndLoop);
+
+		return null;
 	}
 
 	@Override
@@ -514,9 +587,13 @@ public class CodeGen5 implements ASTVisitor, Opcodes {
 			}
 			case Image -> {
 				mv.visitFieldInsn(GETSTATIC, className, name, PLPImage.desc);
-				// TODO: How to load X and Y on the stack?
-				mv.visitLdcInsn(0);
-				mv.visitLdcInsn(0);
+				if (statementOutScreen.X() != Expression.empty) {
+					statementOutScreen.X().visit(this, arg);
+					statementOutScreen.Y().visit(this, arg);
+				} else {
+					mv.visitLdcInsn(0);
+					mv.visitLdcInsn(0);
+				}
 				mv.visitMethodInsn(INVOKESTATIC, LoggedIO.className, "imageToScreen", LoggedIO.imageToScreenSig,
 						isInterface);
 			}
