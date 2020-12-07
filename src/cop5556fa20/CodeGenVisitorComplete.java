@@ -16,6 +16,7 @@ package cop5556fa20;
 
 import cop5556fa20.AST.Type;
 import cop5556fa20.AST.*;
+import cop5556fa20.Scanner.Token;
 import cop5556fa20.runtime.BufferedImageUtils;
 import cop5556fa20.runtime.LoggedIO;
 import cop5556fa20.runtime.PLPImage;
@@ -62,10 +63,10 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 		}
 	}
 
-	public void loadBufferedImageOnStack(DecImage decImage, Object arg) throws Exception {
+	public void loadBufferedImageOnStack(Token first, DecImage decImage, Object arg) throws Exception {
 		loadDimensionOnStack(decImage, arg);
-		mv.visitLdcInsn(decImage.first().line());
-		mv.visitLdcInsn(decImage.first().posInLine());
+		mv.visitLdcInsn(first.line());
+		mv.visitLdcInsn(first.posInLine());
 		mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"getImgIfDimensionsMatch",
 				"(Ljava/awt/Dimension;II)" + BufferedImageDesc,false);
 	}
@@ -105,7 +106,7 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 						if (decImage.width() != Expression.empty) resizeImage(decImage, arg);
 					} else if (decImage.op() == Scanner.Kind.ASSIGN) {
 						// Consume the RHS PLPImage object to fetch the RHS BufferedImage to the top of stack
-						if (decImage.width() != Expression.empty) loadBufferedImageOnStack(decImage, arg);
+						if (decImage.width() != Expression.empty) loadBufferedImageOnStack(decImage.first(), decImage, arg);
 						else mv.visitFieldInsn(GETFIELD, PLPImage.className, "image", BufferedImageDesc);
 					}
 				}
@@ -436,7 +437,7 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 			mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"assertImageIsNotNull", "(II)V",false);
 
 			// load the BufferedImage on top of the stack with the help of RHS instance on the stack
-			if (decImage.width() != Expression.empty) loadBufferedImageOnStack(decImage, arg);
+			if (decImage.width() != Expression.empty) loadBufferedImageOnStack(statementAssign.first(), decImage, arg);
 			else mv.visitFieldInsn(GETFIELD, PLPImage.className, "image", BufferedImageDesc);
 
 			// set the reference of the image field of the LHS to that of the RHS, consuming one instance of the LHS
@@ -503,7 +504,7 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 		Label lInner = new Label(); // inner loop label
 		Label lIncrementInnerIndex = new Label();
 		Label lIncrementOuterIndex = new Label();
-		Label lEndLoop = new Label(); // end loop
+		Label lEndLoop = new Label(); // end loop label
 
 		// Init local variable X with 0 and start the outer loop
 		mv.visitInsn(ICONST_0);
@@ -515,7 +516,7 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 		mv.visitVarInsn(ILOAD, 3);
 		mv.visitJumpInsn(IF_ICMPGE, lEndLoop);
 
-		// Init local variable Y with 0 and start the inner loop
+		// Initialize local variable Y with 0 and start the inner loop
 		mv.visitInsn(ICONST_0);
 		mv.visitVarInsn(ISTORE, 2);
 		mv.visitLabel(lInner);

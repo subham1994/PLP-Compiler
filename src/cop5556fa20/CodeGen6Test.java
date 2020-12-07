@@ -333,6 +333,8 @@ class CodeGen6Test {
     			args -> screen;
 				image a <- @0;
 				image b = a;
+				image temp;
+				temp = a;
 				b -> screen;
 				image[640, 480] c <- @0;
 				image[640, 480] d = c;
