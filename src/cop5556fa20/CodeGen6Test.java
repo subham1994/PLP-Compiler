@@ -391,6 +391,20 @@ class CodeGen6Test {
 //		keepFrames();
 	}
 
+	@Test
+	void testDecImgFail () throws Exception {
+		String input = """
+				image[500,600] b;
+				image[500,600] c = b;
+				""";
+
+		Exception exception = assertThrows(PLPImageException.class, () -> {
+			genRun(input);
+		});
+		show(exception);
+//		keepFrames();
+	}
+
 
 	@Test
 	public void testStatementImageInPass () throws Exception {
@@ -497,6 +511,48 @@ class CodeGen6Test {
 
 	 	expectedLog.add(a);
 	 	assertEquals(expectedLog, LoggedIO.globalLog);
+//		keepFrames();
+	}
+
+	@Test
+	public void testImageEq () throws Exception {
+		String input = """
+				image a <- @0;
+				image b <- @1;
+				string isEqual = a == b ? "yes" : "no";
+				isEqual -> screen;
+				b <- @0;
+				isEqual = a == b ? "yes" : "no";
+				isEqual -> screen;
+				""";
+
+		String[] args = {ImageResources.urlTower, ImageResources.urlKanapaha};
+		genRun(input,args);
+		ArrayList<Object> expectedLog = new ArrayList<Object>();
+		expectedLog.add("no");
+		expectedLog.add("yes");
+		assertEquals(expectedLog, LoggedIO.globalLog);
+//		keepFrames();
+	}
+
+	@Test
+	public void testImageNeq () throws Exception {
+		String input = """
+				image a <- @0;
+				image b <- @1;
+				string isEqual = a != b ? "yes" : "no";
+				isEqual -> screen;
+				b <- @0;
+				isEqual = a != b ? "yes" : "no";
+				isEqual -> screen;
+				""";
+
+		String[] args = {ImageResources.urlKanapaha, ImageResources.urlTower};
+		genRun(input,args);
+		ArrayList<Object> expectedLog = new ArrayList<Object>();
+		expectedLog.add("yes");
+		expectedLog.add("no");
+		assertEquals(expectedLog, LoggedIO.globalLog);
 //		keepFrames();
 	}
 }

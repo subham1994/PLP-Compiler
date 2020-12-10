@@ -140,6 +140,15 @@ public class PLPImage {
 		result = prime * result + ((image == null) ? 0 : image.hashCode());
 		return result;
 	}
+
+	public boolean compareEq (PLPImage other) {
+		return this.equals(other);
+	}
+
+	public boolean compareNeq (PLPImage other) {
+		return !this.equals(other);
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)

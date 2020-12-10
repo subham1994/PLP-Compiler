@@ -42,7 +42,7 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 		this.className = className;
 	}
 
-	public void resizeImage (DecImage decImage, Object arg) throws Exception {
+	private void resizeImage (DecImage decImage, Object arg) throws Exception {
 		String resizeImageDesc = "(" + BufferedImageDesc + "II)" + BufferedImageDesc;
 		decImage.width().visit(this, arg);
 		decImage.height().visit(this, arg);
@@ -50,7 +50,7 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 				resizeImageDesc,false);
 	}
 
-	public void loadDimensionOnStack(DecImage decImage, Object arg) throws Exception {
+	private void loadDimensionOnStack (DecImage decImage, Object arg) throws Exception {
 		if (decImage.width() != Expression.empty) {
 			String desc = "java/awt/Dimension";
 			mv.visitTypeInsn(NEW, desc);
@@ -63,12 +63,24 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 		}
 	}
 
-	public void loadBufferedImageOnStack(Token first, DecImage decImage, Object arg) throws Exception {
+	private void getImgIfDimensionsMatch(Token first, DecImage decImage, Object arg) throws Exception {
 		loadDimensionOnStack(decImage, arg);
 		mv.visitLdcInsn(first.line());
 		mv.visitLdcInsn(first.posInLine());
 		mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"getImgIfDimensionsMatch",
 				"(Ljava/awt/Dimension;II)" + BufferedImageDesc,false);
+	}
+
+	private void handleAssignmentForImage (Token first, DecImage decImage, Object arg) throws Exception {
+		// clone the top of stack to call the method on PLPImage object to check if the image is not null
+		mv.visitInsn(DUP);
+		mv.visitLdcInsn(first.line());
+		mv.visitLdcInsn(first.posInLine());
+		mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"assertImageIsNotNull", "(II)V",false);
+
+		// Consume the RHS PLPImage object to put the RHS BufferedImage to the top of stack
+		if (decImage.width() != Expression.empty) getImgIfDimensionsMatch(first, decImage, arg);
+		else mv.visitFieldInsn(GETFIELD, PLPImage.className, "image", BufferedImageDesc);
 	}
 	
 	
@@ -105,9 +117,7 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 
 						if (decImage.width() != Expression.empty) resizeImage(decImage, arg);
 					} else if (decImage.op() == Scanner.Kind.ASSIGN) {
-						// Consume the RHS PLPImage object to fetch the RHS BufferedImage to the top of stack
-						if (decImage.width() != Expression.empty) loadBufferedImageOnStack(decImage.first(), decImage, arg);
-						else mv.visitFieldInsn(GETFIELD, PLPImage.className, "image", BufferedImageDesc);
+						handleAssignmentForImage(decImage.first(), decImage, arg);
 					}
 				}
 				default -> {
@@ -220,6 +230,12 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 				Label l0 = new Label();
 				Label l1 = new Label();
 
+				if (exprBinary.e0().type() == Type.Image) {
+					String methodName = exprBinary.op() == Scanner.Kind.EQ ? "compareEq" : "compareNeq";
+					mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className, methodName, "(" + PLPImage.desc + ")Z",false);
+					return null;
+				}
+
 				mv.visitJumpInsn(opMap.get(exprBinary.op()), l0);
 				mv.visitInsn(ICONST_0);
 				mv.visitJumpInsn(GOTO, l1);
@@ -231,6 +247,7 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 				throw new UnsupportedOperationException("not yet implemented");
 			}
 		}
+
 		return null;
 	}
 
@@ -429,16 +446,7 @@ public class CodeGenVisitorComplete implements ASTVisitor, Opcodes {
 		else if (type == Type.String) desc = "Ljava/lang/String;";
 		else {
 			DecImage decImage = (DecImage) statementAssign.dec();
-
-			// clone the top of stack to call the method on PLPImage object to check if the image is not null
-			mv.visitInsn(DUP);
-			mv.visitLdcInsn(statementAssign.first().line());
-			mv.visitLdcInsn(statementAssign.first().posInLine());
-			mv.visitMethodInsn(INVOKEVIRTUAL, PLPImage.className,"assertImageIsNotNull", "(II)V",false);
-
-			// load the BufferedImage on top of the stack with the help of RHS instance on the stack
-			if (decImage.width() != Expression.empty) loadBufferedImageOnStack(statementAssign.first(), decImage, arg);
-			else mv.visitFieldInsn(GETFIELD, PLPImage.className, "image", BufferedImageDesc);
+			handleAssignmentForImage(statementAssign.first(), decImage, arg);
 
 			// set the reference of the image field of the LHS to that of the RHS, consuming one instance of the LHS
 			mv.visitFieldInsn(PUTFIELD, PLPImage.className, "image", BufferedImageDesc);
